@@ -3,9 +3,9 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros">
     <SteamVRRuntimeDir>C:\Program Files (x86)\steam\steamapps\common\SteamVR</SteamVRRuntimeDir>
-    <OpenVRDir>d:\dev\openvr_hydra\sdk_20160123</OpenVRDir>
-    <SixenseSDKDir>C:\Program Files (x86)\steam\steamapps\common\Sixense SDK\SixenseSDK</SixenseSDKDir>
-    <InstallDir>D:\dev\hydra</InstallDir>
+    <OpenVRDir>c:\Users\beta\Source\Repos\openvr</OpenVRDir>
+    <SixenseSDKDir>d:\SteamLibrary\SteamApps\common\Sixense SDK\SixenseSDK</SixenseSDKDir>
+    <InstallDir>D:\dev</InstallDir>
   </PropertyGroup>
   <PropertyGroup />
   <ItemDefinitionGroup />
