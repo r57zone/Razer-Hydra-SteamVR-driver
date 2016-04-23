@@ -3,6 +3,7 @@
 // driver_hydra.cpp : Defines the client and server interfaces used by the SteamVR runtime.
 //
 
+#include "stdafx.h"
 #include "pch.h"
 #include "driver_hydra.h"
 #include <sixense.h>

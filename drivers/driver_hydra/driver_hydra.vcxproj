@@ -221,6 +221,7 @@ xcopy /s /i /y "$(SolutionDir)\resources" "$(InstallDir)\resources"</Command>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <GenerateWindowsMetadata>false</GenerateWindowsMetadata>
       <AdditionalLibraryDirectories>$(SixenseSDKDir)\lib\$(Platform)\$(Configuration)_dll;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>sixense_x64.lib;sixense_utils_x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <CustomBuildStep>
       <Message />
