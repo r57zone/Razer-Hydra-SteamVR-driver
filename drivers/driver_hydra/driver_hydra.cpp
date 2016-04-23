@@ -455,6 +455,15 @@ CHydraHmdLatest::CHydraHmdLatest( vr::IServerDriverHost * pDriverHost, int base,
 	sixenseGetNewestData( m_nId, &cd );
 	m_firmware_revision = cd.firmware_revision;
 	m_hardware_revision = cd.hardware_revision;
+
+	// Load config from steamvr.vrsettings
+	vr::IVRSettings *settings_;
+	settings_ = m_pDriverHost->GetSettings(vr::IVRSettings_Version);
+	char tmp_[32];
+
+	// Load rendermodel
+	settings_->GetString("hydra", "renderModel", tmp_, 32, "{hydra}hydra_controller");
+	m_strRenderModel.assign(tmp_, 32);
 }
 
 CHydraHmdLatest::~CHydraHmdLatest()
@@ -626,6 +635,7 @@ uint32_t CHydraHmdLatest::GetStringTrackedDeviceProperty( vr::ETrackedDeviceProp
 {
 	std::ostringstream ssRetVal;
 
+
 	switch ( prop )
 	{
 	case vr::Prop_SerialNumber_String:
@@ -636,7 +646,10 @@ uint32_t CHydraHmdLatest::GetStringTrackedDeviceProperty( vr::ETrackedDeviceProp
 		// The {hydra} syntax lets us refer to rendermodels that are installed
 		// in the driver's own resources/rendermodels directory.  The driver can
 		// still refer to SteamVR models like "generic_hmd".
-		ssRetVal << "{hydra}hydra_controller";
+		//ssRetVal << "{hydra}hydra_controller";
+
+		// We return the user configured rendermodel here. Defaults to "{hydra}hydra_controller".
+		ssRetVal << m_strRenderModel.c_str();
 		break;
 
 	case vr::Prop_ManufacturerName_String:

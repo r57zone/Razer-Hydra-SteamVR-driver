@@ -162,4 +162,7 @@ private:
 	// Assigned by vrserver upon Activate().  The same ID visible to clients
 	uint32_t m_unSteamVRTrackedDeviceId;
 
+	// The rendermodel used by the device. Check the contents of "c:\Program Files (x86)\Steam\steamapps\common\SteamVR\resources\rendermodels" for available models.
+	std::string m_strRenderModel;
+
 };
