@@ -5,7 +5,7 @@
     <SteamVRRuntimeDir>C:\Program Files (x86)\steam\steamapps\common\SteamVR</SteamVRRuntimeDir>
     <OpenVRDir>c:\Users\beta\Source\Repos\openvr</OpenVRDir>
     <SixenseSDKDir>d:\SteamLibrary\SteamApps\common\Sixense SDK\SixenseSDK</SixenseSDKDir>
-    <InstallDir>D:\dev</InstallDir>
+    <InstallDir>D:\hydra</InstallDir>
   </PropertyGroup>
   <PropertyGroup />
   <ItemDefinitionGroup />
