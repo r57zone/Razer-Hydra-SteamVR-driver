@@ -1,0 +1,28 @@
+{
+   "collisionBounds" : {
+      "CollisionBoundsGroundPerimeterOn" : false,
+      "CollisionBoundsStyle" : 0
+   },
+   "hydra" : {
+      // These are built-in rendermodels from the "SteamVR\resources\rendermodels" directory.
+      //"renderModel" : "steam_controller_03_gordon"
+      //"renderModel" : "vr_controller_01_mrhat"
+      //"renderModel" : "vr_controller_05_wireless_b"
+      //"renderModel" : "vr_controller_02_mrhat_puck"
+      "renderModel" : "vr_controller_vive_1_5"
+   },
+   "jsonid" : "vrsettings",
+   "keyboard" : {
+      "TutorialCompletions" : 1
+   },
+   "perfcheck" : {
+      "heuristicActive" : true
+   },
+   "steamvr" : {
+      "activateMultipleDrivers" : true,
+      "allowReprojection" : true,
+      "background" : "#0A0A0A",
+      "loglevel" : 3
+   },
+   "version" : "1"
+}

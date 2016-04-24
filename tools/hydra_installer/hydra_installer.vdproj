@@ -75,6 +75,12 @@
         }
         "Entry"
         {
+        "MsmKey" = "8:_4DECB4F2300140F986D5E26E2F46D8EB"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
         "MsmKey" = "8:_5D2E8844BFC146EE8A48925D279754C7"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
@@ -105,6 +111,12 @@
         }
         "Entry"
         {
+        "MsmKey" = "8:_983A7D1646F9483AA2D164DCF999E52A"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
         "MsmKey" = "8:_A86A20EAE6A54E1182E623BEF1B0149D"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
@@ -112,6 +124,18 @@
         "Entry"
         {
         "MsmKey" = "8:_C419CDF73F0A4CC7B3BB7585A2CB5919"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_C80F010063C1420A86BB3AE44F9A69E5"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_C903796499C74F3AB8B36CF618608795"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
@@ -191,16 +215,6 @@
                     "Name" = "8:Microsoft .NET Framework 4.5 (x86 and x64)"
                     "ProductCode" = "8:.NETFramework,Version=v4.5"
                     }
-                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:Microsoft.Visual.C++.14.0.x64"
-                    {
-                    "Name" = "8:Visual C++ \"14\" Runtime Libraries (x64)"
-                    "ProductCode" = "8:Microsoft.Visual.C++.14.0.x64"
-                    }
-                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:Microsoft.Visual.C++.14.0.x86"
-                    {
-                    "Name" = "8:Visual C++ \"14\" Runtime Libraries (x86)"
-                    "ProductCode" = "8:Microsoft.Visual.C++.14.0.x86"
-                    }
                 }
             }
         }
@@ -209,6 +223,34 @@
     {
         "CustomAction"
         {
+            "{4AA51A2D-7D85-4A59-BA75-B0809FC8B380}:_AE1BF1147B8A487D986F3764F023E1A5"
+            {
+            "Name" = "8:cmd.exe"
+            "Condition" = "8:"
+            "Object" = "8:_C903796499C74F3AB8B36CF618608795"
+            "FileType" = "3:2"
+            "InstallAction" = "3:4"
+            "Arguments" = "8:/c \"[TARGETDIR]unregister_driver.cmd\""
+            "EntryPoint" = "8:"
+            "Sequence" = "3:1"
+            "Identifier" = "8:_49B2238A_F995_463B_8756_2B01F6B89585"
+            "InstallerClass" = "11:FALSE"
+            "CustomActionData" = "8:"
+            }
+            "{4AA51A2D-7D85-4A59-BA75-B0809FC8B380}:_C1A640DCDFE14A17930268CEBAB07E0E"
+            {
+            "Name" = "8:cmd.exe"
+            "Condition" = "8:"
+            "Object" = "8:_C903796499C74F3AB8B36CF618608795"
+            "FileType" = "3:2"
+            "InstallAction" = "3:2"
+            "Arguments" = "8:/c \"[TARGETDIR]register_driver.cmd\""
+            "EntryPoint" = "8:"
+            "Sequence" = "3:1"
+            "Identifier" = "8:_25790B02_B8C1_40D8_8F10_B3EFC38B0EBE"
+            "InstallerClass" = "11:FALSE"
+            "CustomActionData" = "8:"
+            }
         }
         "DefaultFeature"
         {
@@ -424,6 +466,26 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_4DECB4F2300140F986D5E26E2F46D8EB"
+            {
+            "SourcePath" = "8:register_driver.cmd"
+            "TargetName" = "8:register_driver.cmd"
+            "Tag" = "8:"
+            "Folder" = "8:_B572C0F62C374CA0A6C66D010BE1A374"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_5D2E8844BFC146EE8A48925D279754C7"
             {
             "SourcePath" = "8:D:\\hydra\\bin\\x64\\openvr_api.dll"
@@ -524,6 +586,26 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_983A7D1646F9483AA2D164DCF999E52A"
+            {
+            "SourcePath" = "8:steamvr.vrsettings"
+            "TargetName" = "8:steamvr.vrsettings"
+            "Tag" = "8:"
+            "Folder" = "8:_B572C0F62C374CA0A6C66D010BE1A374"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_A86A20EAE6A54E1182E623BEF1B0149D"
             {
             "SourcePath" = "8:D:\\hydra\\bin\\x64\\sixense_utils_x64.pdb"
@@ -561,6 +643,46 @@
             "PackageAs" = "3:1"
             "Register" = "3:1"
             "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_C80F010063C1420A86BB3AE44F9A69E5"
+            {
+            "SourcePath" = "8:unregister_driver.cmd"
+            "TargetName" = "8:unregister_driver.cmd"
+            "Tag" = "8:"
+            "Folder" = "8:_B572C0F62C374CA0A6C66D010BE1A374"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_C903796499C74F3AB8B36CF618608795"
+            {
+            "SourcePath" = "8:C:\\Windows\\System32\\cmd.exe"
+            "TargetName" = "8:cmd.exe"
+            "Tag" = "8:"
+            "Folder" = "8:_9B448EAA375D496EB84FE5D58D8442DE"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:TRUE"
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
@@ -612,7 +734,7 @@
         {
             "{3C67513D-01DD-4637-8A68-80971EB9504F}:_B572C0F62C374CA0A6C66D010BE1A374"
             {
-            "DefaultLocation" = "8:c:\\Program Files (x86)\\Steam\\steamapps\\common\\SteamVR\\"
+            "DefaultLocation" = "8:c:\\Program Files (x86)\\SteamVR Hydra driver"
             "Name" = "8:#1925"
             "AlwaysCreate" = "11:FALSE"
             "Condition" = "8:"
@@ -620,95 +742,51 @@
             "Property" = "8:TARGETDIR"
                 "Folders"
                 {
-                    "{9EF0B969-E518-4E46-987F-47570745A589}:_5D9E11B473CA47A493C909AE64919FBF"
+                    "{9EF0B969-E518-4E46-987F-47570745A589}:_612B6353C7A34055B1F60607C3F3C0EA"
                     {
-                    "Name" = "8:drivers"
+                    "Name" = "8:hydra"
                     "AlwaysCreate" = "11:FALSE"
                     "Condition" = "8:"
                     "Transitive" = "11:FALSE"
-                    "Property" = "8:_E7AA733341F74666BA181ED3002DE271"
+                    "Property" = "8:_B76C8E7B76134394BA854D344FACCAC0"
                         "Folders"
                         {
-                            "{9EF0B969-E518-4E46-987F-47570745A589}:_9E072DC0344945D0A67CD596F763E49E"
+                            "{9EF0B969-E518-4E46-987F-47570745A589}:_443D9E912CDA437A99AA51722DDC713A"
                             {
-                            "Name" = "8:hydra"
+                            "Name" = "8:resources"
                             "AlwaysCreate" = "11:FALSE"
                             "Condition" = "8:"
                             "Transitive" = "11:FALSE"
-                            "Property" = "8:_B76C8E7B76134394BA854D344FACCAC0"
+                            "Property" = "8:_D85FCBA1B88545E3B2B7BAE881284A8F"
                                 "Folders"
                                 {
-                                    "{9EF0B969-E518-4E46-987F-47570745A589}:_443D9E912CDA437A99AA51722DDC713A"
+                                    "{9EF0B969-E518-4E46-987F-47570745A589}:_579FDD1847A64CF1B5DCC9425B60BB30"
                                     {
-                                    "Name" = "8:resources"
+                                    "Name" = "8:overlays"
                                     "AlwaysCreate" = "11:FALSE"
                                     "Condition" = "8:"
                                     "Transitive" = "11:FALSE"
-                                    "Property" = "8:_D85FCBA1B88545E3B2B7BAE881284A8F"
+                                    "Property" = "8:_173FDA6832F44E668BF8C19581FF2336"
                                         "Folders"
                                         {
-                                            "{9EF0B969-E518-4E46-987F-47570745A589}:_579FDD1847A64CF1B5DCC9425B60BB30"
-                                            {
-                                            "Name" = "8:overlays"
-                                            "AlwaysCreate" = "11:FALSE"
-                                            "Condition" = "8:"
-                                            "Transitive" = "11:FALSE"
-                                            "Property" = "8:_173FDA6832F44E668BF8C19581FF2336"
-                                                "Folders"
-                                                {
-                                                }
-                                            }
-                                            "{9EF0B969-E518-4E46-987F-47570745A589}:_830A36686C4B41FAA5C260125503B907"
-                                            {
-                                            "Name" = "8:rendermodels"
-                                            "AlwaysCreate" = "11:FALSE"
-                                            "Condition" = "8:"
-                                            "Transitive" = "11:FALSE"
-                                            "Property" = "8:_FA1AFC43078A40B2A050FA0B02ED1D21"
-                                                "Folders"
-                                                {
-                                                    "{9EF0B969-E518-4E46-987F-47570745A589}:_89792514000845C992963B269A395956"
-                                                    {
-                                                    "Name" = "8:hydra_controller"
-                                                    "AlwaysCreate" = "11:FALSE"
-                                                    "Condition" = "8:"
-                                                    "Transitive" = "11:FALSE"
-                                                    "Property" = "8:_F919CF26BBF8458587EE678E2FF9DDB8"
-                                                        "Folders"
-                                                        {
-                                                        }
-                                                    }
-                                                }
-                                            }
                                         }
                                     }
-                                    "{9EF0B969-E518-4E46-987F-47570745A589}:_6C7DDD8598D04861BC5115FA5D26761A"
+                                    "{9EF0B969-E518-4E46-987F-47570745A589}:_830A36686C4B41FAA5C260125503B907"
                                     {
-                                    "Name" = "8:bin"
+                                    "Name" = "8:rendermodels"
                                     "AlwaysCreate" = "11:FALSE"
                                     "Condition" = "8:"
                                     "Transitive" = "11:FALSE"
-                                    "Property" = "8:_AC65A2107E4B4BA8805F889F0F049AC8"
+                                    "Property" = "8:_FA1AFC43078A40B2A050FA0B02ED1D21"
                                         "Folders"
                                         {
-                                            "{9EF0B969-E518-4E46-987F-47570745A589}:_63ACE570CFFD4D6A9853F4B6B90E0B8C"
+                                            "{9EF0B969-E518-4E46-987F-47570745A589}:_89792514000845C992963B269A395956"
                                             {
-                                            "Name" = "8:Win32"
+                                            "Name" = "8:hydra_controller"
                                             "AlwaysCreate" = "11:FALSE"
                                             "Condition" = "8:"
                                             "Transitive" = "11:FALSE"
-                                            "Property" = "8:_DB679BDED51148F2A32F8E582D9D4E61"
-                                                "Folders"
-                                                {
-                                                }
-                                            }
-                                            "{9EF0B969-E518-4E46-987F-47570745A589}:_6E55793820964E8FAF968D498761B3E3"
-                                            {
-                                            "Name" = "8:x64"
-                                            "AlwaysCreate" = "11:FALSE"
-                                            "Condition" = "8:"
-                                            "Transitive" = "11:FALSE"
-                                            "Property" = "8:_0868F43C1375413D815C73AA49BBA0D4"
+                                            "Property" = "8:_F919CF26BBF8458587EE678E2FF9DDB8"
                                                 "Folders"
                                                 {
                                                 }
@@ -717,6 +795,61 @@
                                     }
                                 }
                             }
+                            "{9EF0B969-E518-4E46-987F-47570745A589}:_9449B2F9163A4584830E19AACAD71EFC"
+                            {
+                            "Name" = "8:bin"
+                            "AlwaysCreate" = "11:FALSE"
+                            "Condition" = "8:"
+                            "Transitive" = "11:FALSE"
+                            "Property" = "8:_AC65A2107E4B4BA8805F889F0F049AC8"
+                                "Folders"
+                                {
+                                    "{9EF0B969-E518-4E46-987F-47570745A589}:_63ACE570CFFD4D6A9853F4B6B90E0B8C"
+                                    {
+                                    "Name" = "8:Win32"
+                                    "AlwaysCreate" = "11:FALSE"
+                                    "Condition" = "8:"
+                                    "Transitive" = "11:FALSE"
+                                    "Property" = "8:_DB679BDED51148F2A32F8E582D9D4E61"
+                                        "Folders"
+                                        {
+                                        }
+                                    }
+                                    "{9EF0B969-E518-4E46-987F-47570745A589}:_6E55793820964E8FAF968D498761B3E3"
+                                    {
+                                    "Name" = "8:x64"
+                                    "AlwaysCreate" = "11:FALSE"
+                                    "Condition" = "8:"
+                                    "Transitive" = "11:FALSE"
+                                    "Property" = "8:_0868F43C1375413D815C73AA49BBA0D4"
+                                        "Folders"
+                                        {
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            "{1525181F-901A-416C-8A58-119130FE478E}:_C723A1043DE14841B8C7302C11B8AA18"
+            {
+            "Name" = "8:#1924"
+            "AlwaysCreate" = "11:FALSE"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Property" = "8:WindowsFolder"
+                "Folders"
+                {
+                    "{9EF0B969-E518-4E46-987F-47570745A589}:_9B448EAA375D496EB84FE5D58D8442DE"
+                    {
+                    "Name" = "8:System32"
+                    "AlwaysCreate" = "11:FALSE"
+                    "Condition" = "8:"
+                    "Transitive" = "11:FALSE"
+                    "Property" = "8:_0561C50F43E240A79C6986353BC3754A"
+                        "Folders"
+                        {
                         }
                     }
                 }
@@ -736,24 +869,24 @@
         "Product"
         {
         "Name" = "8:Microsoft Visual Studio"
-        "ProductName" = "8:Razer Hydra driver for SteamVR"
-        "ProductCode" = "8:{A5A490D5-7C0A-4BDA-ADB2-88DC4CDABB31}"
-        "PackageCode" = "8:{CDEC774A-827A-4229-A0C1-1F8F291E7D44}"
+        "ProductName" = "8:SteamVR Hydra driver"
+        "ProductCode" = "8:{90DF8598-2641-4DC3-A043-1701D91C6C84}"
+        "PackageCode" = "8:{F609489A-3842-4BC1-8350-B7BED7A28789}"
         "UpgradeCode" = "8:{76F38173-D6FE-4221-B110-E68665ACD1AC}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:TRUE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:FALSE"
-        "ProductVersion" = "8:1.0.0"
+        "ProductVersion" = "8:1.0.1"
         "Manufacturer" = "8:betaVR"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:https://github.com/betavr/steamvr_driver_hydra/wiki"
-        "Title" = "8:Razer Hydra driver for SteamVR"
+        "Title" = "8:SteamVR Hydra driver"
         "Subject" = "8:"
         "ARPCONTACT" = "8:Valve"
         "Keywords" = "8:"
-        "ARPCOMMENTS" = "8:Razer Hydra driver for SteamVR"
+        "ARPCOMMENTS" = "8:SteamVR Hydra driver"
         "ARPURLINFOABOUT" = "8:betavr.com"
         "ARPPRODUCTICON" = "8:"
         "ARPIconIndex" = "3:0"
