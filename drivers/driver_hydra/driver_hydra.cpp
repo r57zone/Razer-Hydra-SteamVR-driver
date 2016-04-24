@@ -463,8 +463,8 @@ CHydraHmdLatest::CHydraHmdLatest( vr::IServerDriverHost * pDriverHost, int base,
 	char tmp_[32];
 
 	// Load rendermodel
-	settings_->GetString("hydra", "renderModel", tmp_, 32, "{hydra}hydra_controller");
-	m_strRenderModel.assign(tmp_, 32);
+	settings_->GetString("hydra", "renderModel", tmp_, sizeof(tmp_), "{hydra}hydra_controller");
+	m_strRenderModel.assign(tmp_, sizeof(tmp_));
 }
 
 CHydraHmdLatest::~CHydraHmdLatest()
