@@ -1,5 +1,7 @@
 # Razer Hydra Driver for SteamVR
 
+[![Join the chat at https://gitter.im/betavr/steamvr_driver_hydra](https://badges.gitter.im/betavr/steamvr_driver_hydra.svg)](https://gitter.im/betavr/steamvr_driver_hydra?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 ## Building
 
 ### Install Dependencies
