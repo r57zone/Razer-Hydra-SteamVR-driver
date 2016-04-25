@@ -753,7 +753,7 @@ void CHydraHmdLatest::UpdateControllerState( sixenseControllerData & cd )
 	if ( cd.trigger > 0.8f )
 		NewState.ulButtonPressed |= vr::ButtonMaskFromId( vr::k_EButton_Axis1 );
 	// sixense driver seems to have good deadzone, but add a small one here
-	if ( fabsf( cd.joystick_x ) > 0.03f || fabsf( cd.joystick_y ) > 0.03f )
+	if ( fabsf( cd.joystick_x ) > 0.05f || fabsf( cd.joystick_y ) > 0.05f )
 		NewState.ulButtonTouched |= vr::ButtonMaskFromId( vr::k_EButton_Axis0 );
 
 	// All pressed buttons are touched
