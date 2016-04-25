@@ -499,9 +499,8 @@ void CHydraHmdLatest::Deactivate()
 
 void CHydraHmdLatest::PowerOff()
 {
-	// FIXME Implement
+	// TODO FIXME Implement
 }
-
 
 void CHydraHmdLatest::DebugRequest( const char * pchRequest, char * pchResponseBuffer, uint32_t unResponseBufferSize )
 {
