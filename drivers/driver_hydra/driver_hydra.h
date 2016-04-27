@@ -48,7 +48,7 @@ private:
 	bool m_bLaunchedHydraMonitor;
 
 	std::atomic<bool> m_bStopRequested;
-	std::thread m_Thread;
+	std::thread *m_Thread;   // change m_Thread to a pointer
 	std::recursive_mutex m_Mutex;
 	typedef std::lock_guard<std::recursive_mutex> scope_lock;
 	std::vector< CHydraHmdLatest * > m_vecControllers;
@@ -145,6 +145,7 @@ private:
 	sixenseMath::Vector3 m_WorldFromDriverTranslation;
 	sixenseMath::Quat m_WorldFromDriverRotation;
 	sixenseUtils::Derivatives m_Velocity;
+	sixenseUtils::Derivatives m_Acceleration;
 	enum { k_eHemisphereTrackingDisabled, k_eHemisphereTrackingButtonDown, k_eHemisphereTrackingEnabled } m_eHemisphereTrackingState;
 	bool m_bCalibrated;
 
@@ -165,4 +166,16 @@ private:
 	// The rendermodel used by the device. Check the contents of "c:\Program Files (x86)\Steam\steamapps\common\SteamVR\resources\rendermodels" for available models.
 	std::string m_strRenderModel;
 
+	//Last position for velocity & acceleration extrapolation.
+	sixenseMath::Vector3 lastPosR;
+	sixenseMath::Vector3 lastPosL;
+
+	sixenseMath::Vector3 lastVelR;
+	sixenseMath::Vector3 lastVelL;
+
+	sixenseMath::Quat lastRotR;
+	sixenseMath::Quat lastRotL;
+
+	sixenseMath::Quat lastRotVelR;
+	sixenseMath::Quat lastRotVelL;
 };
