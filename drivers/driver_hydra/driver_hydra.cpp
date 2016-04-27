@@ -467,6 +467,14 @@ CHydraHmdLatest::CHydraHmdLatest( vr::IServerDriverHost * pDriverHost, int base,
 	// Load rendermodel
 	settings_->GetString("hydra", "renderModel", tmp_, sizeof(tmp_), "{hydra}hydra_controller");
 	m_strRenderModel.assign(tmp_, sizeof(tmp_));
+
+	// Enable experimental features
+	m_bEnableIMUEmulation = settings_->GetBool("hydra", "enableIMUEmulation", false);
+
+	if (m_bEnableIMUEmulation) {
+		DriverLog("Experimental IMU emulation enabled.\n");
+	}
+
 }
 
 CHydraHmdLatest::~CHydraHmdLatest()
@@ -841,80 +849,108 @@ void CHydraHmdLatest::UpdateTrackingState( sixenseControllerData & cd )
 	m_Pose.vecPosition[1] = pos[1];
 	m_Pose.vecPosition[2] = pos[2];
 
-	// Note that using first-order derivatives of position is a terrible
-	// way to actually supply velocity to the driver.  Good prediction is
-	// required to compensate for unavoidable system latencies, and having
-	// a good velocity estimate is key to that.  Any serious driver should
-	// be doing sensor fusion with an IMU, and should have some decent
-	// notion of instantaneous velocity.
-	// (Also I have no idea what shenanigans are going on in this sixense_utils
-	// class, so I hope it's reasonable)
-	//m_Velocity.update( &cd );
-	//Vector3 vel = m_Velocity.getVelocity() * k_fScaleSixenseToMeters;
 
-	//m_Acceleration.update(&cd);
-	//Vector3 accel = m_Acceleration.getAcceleration() * k_fScaleSixenseToMeters;
+	if (!m_bEnableIMUEmulation) {
+		// Note that using first-order derivatives of position is a terrible
+		// way to actually supply velocity to the driver.  Good prediction is
+		// required to compensate for unavoidable system latencies, and having
+		// a good velocity estimate is key to that.  Any serious driver should
+		// be doing sensor fusion with an IMU, and should have some decent
+		// notion of instantaneous velocity.
+		// (Also I have no idea what shenanigans are going on in this sixense_utils
+		// class, so I hope it's reasonable)
+		m_Velocity.update( &cd );
+		Vector3 vel = m_Velocity.getVelocity() * k_fScaleSixenseToMeters;
 
-	// The tradeoff here is that setting a valid velocity causes the controllers
-	// to jitter, but the controllers feel much more "alive" and lighter.
-	// The jitter while stationary is more annoying than the laggy feeling caused
-	// by disabling velocity (which effectively disables prediction for rendering).
-	// Even the Hydra (without IMU) could probably produce a better velocity here
-	// with a different filter on top of the raw position.  Perhaps someone feels
-	// like writing one??
-	//vel *= 0.0f;  // XXX with no velocity, throwing might not work in some games
+		// The tradeoff here is that setting a valid velocity causes the controllers
+		// to jitter, but the controllers feel much more "alive" and lighter.
+		// The jitter while stationary is more annoying than the laggy feeling caused
+		// by disabling velocity (which effectively disables prediction for rendering).
+		// Even the Hydra (without IMU) could probably produce a better velocity here
+		// with a different filter on top of the raw position.  Perhaps someone feels
+		// like writing one??
+		vel *= 0.0f;  // XXX with no velocity, throwing might not work in some games
+		m_Pose.vecVelocity[0] = vel[0];
+		m_Pose.vecVelocity[1] = vel[1];
+		m_Pose.vecVelocity[2] = vel[2];
 
-	//Temporary values for extrapolating velocity, accleration, angular velocity and angular accleration.
-	Vector3 vel;
-	Vector3 accel;
-	Vector3 velAng;
-	Vector3 accelAng;
+		// True acceleration is highly volatile, so it's not really reasonable to
+		// extrapolate much from it anyway.  Passing it as 0 from any driver should
+		// be fine.
+		m_Pose.vecAcceleration[0] = 0.0;
+		m_Pose.vecAcceleration[1] = 0.0;
+		m_Pose.vecAcceleration[2] = 0.0;
 
-	//Temporary values for storing the previous values of the parameters above.
-	Vector3 lastPos;
-	Vector3 lastRot;
-	Vector3 lastVel;
-	Vector3 lastRotVel;
+		//Set rotational coordinates
+		m_Pose.qRotation.w = cd.rot_quat[3];
+		m_Pose.qRotation.x = cd.rot_quat[0];
+		m_Pose.qRotation.y = cd.rot_quat[1];
+		m_Pose.qRotation.z = cd.rot_quat[2];
 
-	//Determine which hand we're currently updating and set the corresonding saved last values.
-	//For right hand
-	if (cd.which_hand=='R')
-	{
-		lastPos[0] = lastPosR[0];
-		lastPos[1] = lastPosR[1];
-		lastPos[2] = lastPosR[2];
+		// Unmeasured.  XXX with no angular velocity, throwing might not work in some games
+		m_Pose.vecAngularVelocity[0] = 0.0;
+		m_Pose.vecAngularVelocity[1] = 0.0;
+		m_Pose.vecAngularVelocity[2] = 0.0;
 
-		lastVel[0] = lastVelR[0];
-		lastVel[1] = lastVelR[1];
-		lastVel[2] = lastVelR[2];
+		// The same argument applies here as to vecAcceleration, and a driver is even
+		// less likely to have a valid value for it (since gyros measure angular velocity)
+		m_Pose.vecAngularAcceleration[0] = 0.0;
+		m_Pose.vecAngularAcceleration[1] = 0.0;
+		m_Pose.vecAngularAcceleration[2] = 0.0;
 
-		lastRot[0] = lastRotR[0];
-		lastRot[1] = lastRotR[1];
-		lastRot[2] = lastRotR[2];
+	} else { // Experimental IMU Emulation
 
-		lastRotVel[0] = lastRotVelR[0];
-		lastRotVel[1] = lastRotVelR[1];
-		lastRotVel[2] = lastRotVelR[2];
-	}
-	//For left hand
-	else 
-	{
-		lastPos[0] = lastPosL[0];
-		lastPos[1] = lastPosL[1];
-		lastPos[2] = lastPosL[2];
+		//Temporary values for extrapolating velocity, accleration, angular velocity and angular accleration.
+		Vector3 vel;
+		Vector3 accel;
+		Vector3 velAng;
+		Vector3 accelAng;
 
-		lastVel[0] = lastVelL[0];
-		lastVel[1] = lastVelL[1];
-		lastVel[2] = lastVelL[2];
+		//Temporary values for storing the previous values of the parameters above.
+		Vector3 lastPos;
+		Vector3 lastRot;
+		Vector3 lastVel;
+		Vector3 lastRotVel;
 
-		lastRot[0] = lastRotL[0];
-		lastRot[1] = lastRotL[1];
-		lastRot[2] = lastRotL[2];
+		//Determine which hand we're currently updating and set the corresonding saved last values.
+		//For right hand
+		if (cd.which_hand == 'R')
+		{
+			lastPos[0] = lastPosR[0];
+			lastPos[1] = lastPosR[1];
+			lastPos[2] = lastPosR[2];
 
-		lastRotVel[0] = lastRotVelL[0];
-		lastRotVel[1] = lastRotVelL[1];
-		lastRotVel[2] = lastRotVelL[2];
-	}
+			lastVel[0] = lastVelR[0];
+			lastVel[1] = lastVelR[1];
+			lastVel[2] = lastVelR[2];
+
+			lastRot[0] = lastRotR[0];
+			lastRot[1] = lastRotR[1];
+			lastRot[2] = lastRotR[2];
+
+			lastRotVel[0] = lastRotVelR[0];
+			lastRotVel[1] = lastRotVelR[1];
+			lastRotVel[2] = lastRotVelR[2];
+		}
+		//For left hand
+		else
+		{
+			lastPos[0] = lastPosL[0];
+			lastPos[1] = lastPosL[1];
+			lastPos[2] = lastPosL[2];
+
+			lastVel[0] = lastVelL[0];
+			lastVel[1] = lastVelL[1];
+			lastVel[2] = lastVelL[2];
+
+			lastRot[0] = lastRotL[0];
+			lastRot[1] = lastRotL[1];
+			lastRot[2] = lastRotL[2];
+
+			lastRotVel[0] = lastRotVelL[0];
+			lastRotVel[1] = lastRotVelL[1];
+			lastRotVel[2] = lastRotVelL[2];
+		}
 		//Used by betavr to extrapolate acelleration. However, we're going to be taking the deritivive of using the previous stored velocity.
 		float permanent_acceleration_ratio = 0.1;
 		//Parameter to adjust jitter.
@@ -996,31 +1032,33 @@ void CHydraHmdLatest::UpdateTrackingState( sixenseControllerData & cd )
 			lastRotVelL[2] = lastRotVel[2];
 		}
 
-	//Set Velocity
-	m_Pose.vecVelocity[0] = vel[0];
-	m_Pose.vecVelocity[1] = vel[1];
-	m_Pose.vecVelocity[2] = vel[2];
+		//Set Velocity
+		m_Pose.vecVelocity[0] = vel[0];
+		m_Pose.vecVelocity[1] = vel[1];
+		m_Pose.vecVelocity[2] = vel[2];
 
-	//Set acelleration.
-	m_Pose.vecAcceleration[0] = accel[0];
-	m_Pose.vecAcceleration[1] = accel[1];
-	m_Pose.vecAcceleration[2] = accel[2];
+		//Set acelleration.
+		m_Pose.vecAcceleration[0] = accel[0];
+		m_Pose.vecAcceleration[1] = accel[1];
+		m_Pose.vecAcceleration[2] = accel[2];
 
-	//Set rotational coordinates
-	m_Pose.qRotation.w = cd.rot_quat[3];
-	m_Pose.qRotation.x = cd.rot_quat[0];
-	m_Pose.qRotation.y = cd.rot_quat[1];
-	m_Pose.qRotation.z = cd.rot_quat[2];
+		//Set rotational coordinates
+		m_Pose.qRotation.w = cd.rot_quat[3];
+		m_Pose.qRotation.x = cd.rot_quat[0];
+		m_Pose.qRotation.y = cd.rot_quat[1];
+		m_Pose.qRotation.z = cd.rot_quat[2];
 
-	// Set angular velocity.
-	m_Pose.vecAngularVelocity[0] = velAng[0];
-	m_Pose.vecAngularVelocity[1] = velAng[1];
-	m_Pose.vecAngularVelocity[2] = velAng[2];
+		// Set angular velocity.
+		m_Pose.vecAngularVelocity[0] = velAng[0];
+		m_Pose.vecAngularVelocity[1] = velAng[1];
+		m_Pose.vecAngularVelocity[2] = velAng[2];
 
-	// Set angular accleration
-	m_Pose.vecAngularAcceleration[0] = accelAng[0];
-	m_Pose.vecAngularAcceleration[1] = accelAng[1];
-	m_Pose.vecAngularAcceleration[2] = accelAng[2];
+		// Set angular accleration
+		m_Pose.vecAngularAcceleration[0] = accelAng[0];
+		m_Pose.vecAngularAcceleration[1] = accelAng[1];
+		m_Pose.vecAngularAcceleration[2] = accelAng[2];
+
+	}
 
 	// Don't show user any controllers until they have hemisphere tracking and
 	// do the calibration gesture.  hydra_monitor should be prompting with an overlay

@@ -166,6 +166,9 @@ private:
 	// The rendermodel used by the device. Check the contents of "c:\Program Files (x86)\Steam\steamapps\common\SteamVR\resources\rendermodels" for available models.
 	std::string m_strRenderModel;
 
+	// Experimental features, can be enabled in steamvr.vrsettings.
+	bool m_bEnableIMUEmulation;
+
 	//Last position for velocity & acceleration extrapolation.
 	sixenseMath::Vector3 lastPosR;
 	sixenseMath::Vector3 lastPosL;
