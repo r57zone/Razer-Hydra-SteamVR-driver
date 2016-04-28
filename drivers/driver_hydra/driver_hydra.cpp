@@ -743,8 +743,12 @@ void CHydraHmdLatest::UpdateControllerState( sixenseControllerData & cd )
 	// changed.  We don't try to be precise about that here.
 	NewState.unPacketNum = m_ControllerState.unPacketNum + 1;
 
-	if ( cd.buttons & SIXENSE_BUTTON_1 )
-		NewState.ulButtonPressed |= vr::ButtonMaskFromId( k_EButton_Button1 );
+	if (cd.buttons & SIXENSE_BUTTON_1) {
+		// Button 1 on the hydra toggles the imu emulation
+		if (!(m_ControllerState.ulButtonPressed & vr::ButtonMaskFromId(k_EButton_Button1)))
+			m_bEnableIMUEmulation = !m_bEnableIMUEmulation;
+		NewState.ulButtonPressed |= vr::ButtonMaskFromId(k_EButton_Button1);
+	}
 	if ( cd.buttons & SIXENSE_BUTTON_2 )
 		NewState.ulButtonPressed |= vr::ButtonMaskFromId( k_EButton_Button2 );
 	if ( cd.buttons & SIXENSE_BUTTON_3 )
@@ -869,10 +873,9 @@ void CHydraHmdLatest::UpdateTrackingState( sixenseControllerData & cd )
 		// Even the Hydra (without IMU) could probably produce a better velocity here
 		// with a different filter on top of the raw position.  Perhaps someone feels
 		// like writing one??
-		vel *= 0.0f;  // XXX with no velocity, throwing might not work in some games
-		m_Pose.vecVelocity[0] = vel[0];
-		m_Pose.vecVelocity[1] = vel[1];
-		m_Pose.vecVelocity[2] = vel[2];
+		m_Pose.vecVelocity[0] = 0.0;
+		m_Pose.vecVelocity[1] = 0.0;
+		m_Pose.vecVelocity[2] = 0.0;
 
 		// True acceleration is highly volatile, so it's not really reasonable to
 		// extrapolate much from it anyway.  Passing it as 0 from any driver should
@@ -900,57 +903,38 @@ void CHydraHmdLatest::UpdateTrackingState( sixenseControllerData & cd )
 
 	} else { // Experimental IMU Emulation
 
+		m_Velocity.update(&cd);
+		Vector3 vel = m_Velocity.getVelocity() * k_fScaleSixenseToMeters;
+		m_Pose.vecVelocity[0] = vel[0];
+		m_Pose.vecVelocity[1] = vel[1];
+		m_Pose.vecVelocity[2] = vel[2];
+
+		m_Acceleration.update(&cd);
+		Vector3 acc = m_Acceleration.getAcceleration() * k_fScaleSixenseToMeters;
+		m_Pose.vecAcceleration[0] = acc[0];
+		m_Pose.vecAcceleration[1] = acc[1];
+		m_Pose.vecAcceleration[2] = acc[2];
+
+		m_Pose.qRotation.w = cd.rot_quat[3];
+		m_Pose.qRotation.x = cd.rot_quat[0];
+		m_Pose.qRotation.y = cd.rot_quat[1];
+		m_Pose.qRotation.z = cd.rot_quat[2];
+
+		m_Pose.vecAngularVelocity[0] = 0.0;
+		m_Pose.vecAngularVelocity[1] = 0.0;
+		m_Pose.vecAngularVelocity[2] = 0.0;
+
+		m_Pose.vecAngularAcceleration[0] = 0.0;
+		m_Pose.vecAngularAcceleration[1] = 0.0;
+		m_Pose.vecAngularAcceleration[2] = 0.0;
+
+		/*
 		//Temporary values for extrapolating velocity, accleration, angular velocity and angular accleration.
 		Vector3 vel;
 		Vector3 accel;
 		Vector3 velAng;
 		Vector3 accelAng;
 
-		//Temporary values for storing the previous values of the parameters above.
-		Vector3 lastPos;
-		Vector3 lastRot;
-		Vector3 lastVel;
-		Vector3 lastRotVel;
-
-		//Determine which hand we're currently updating and set the corresonding saved last values.
-		//For right hand
-		if (cd.which_hand == 'R')
-		{
-			lastPos[0] = lastPosR[0];
-			lastPos[1] = lastPosR[1];
-			lastPos[2] = lastPosR[2];
-
-			lastVel[0] = lastVelR[0];
-			lastVel[1] = lastVelR[1];
-			lastVel[2] = lastVelR[2];
-
-			lastRot[0] = lastRotR[0];
-			lastRot[1] = lastRotR[1];
-			lastRot[2] = lastRotR[2];
-
-			lastRotVel[0] = lastRotVelR[0];
-			lastRotVel[1] = lastRotVelR[1];
-			lastRotVel[2] = lastRotVelR[2];
-		}
-		//For left hand
-		else
-		{
-			lastPos[0] = lastPosL[0];
-			lastPos[1] = lastPosL[1];
-			lastPos[2] = lastPosL[2];
-
-			lastVel[0] = lastVelL[0];
-			lastVel[1] = lastVelL[1];
-			lastVel[2] = lastVelL[2];
-
-			lastRot[0] = lastRotL[0];
-			lastRot[1] = lastRotL[1];
-			lastRot[2] = lastRotL[2];
-
-			lastRotVel[0] = lastRotVelL[0];
-			lastRotVel[1] = lastRotVelL[1];
-			lastRotVel[2] = lastRotVelL[2];
-		}
 		//Used by betavr to extrapolate acelleration. However, we're going to be taking the deritivive of using the previous stored velocity.
 		float permanent_acceleration_ratio = 0.1;
 		//Parameter to adjust jitter.
@@ -992,45 +976,21 @@ void CHydraHmdLatest::UpdateTrackingState( sixenseControllerData & cd )
 		accelAng[2] = (velAng[2] - lastRotVel[2]) * refresh;
 		//if (accelAng[2] < minimum && accelAng[2] > -minimum) accelAng[2] = 0;
 
-		//Now we need to update the previous positions.
-		//For right hand
-		if (cd.which_hand == 'R')
-		{
-			lastPosR[0] = pos[0];
-			lastPosR[1] = pos[1];
-			lastPosR[2] = pos[2];
+		lastPos[0] = pos[0];
+		lastPos[1] = pos[1];
+		lastPos[2] = pos[2];
 
-			lastVelR[0] = lastVel[0];
-			lastVelR[1] = lastVel[1];
-			lastVelR[2] = lastVel[2];
+		lastVel[0] = vel[0];
+		lastVel[1] = vel[1];
+		lastVel[2] = vel[2];
 
-			lastRotR[0] = cd.rot_quat[0];
-			lastRotR[1] = cd.rot_quat[1];
-			lastRotR[2] = cd.rot_quat[2];
+		lastRot[0] = cd.rot_quat[0];
+		lastRot[1] = cd.rot_quat[1];
+		lastRot[2] = cd.rot_quat[2];
 
-			lastRotVelR[0] = lastRotVel[0];
-			lastRotVelR[1] = lastRotVel[1];
-			lastRotVelR[2] = lastRotVel[2];
-		}
-		//For left hand
-		else
-		{
-			lastPosL[0] = pos[0];
-			lastPosL[1] = pos[1];
-			lastPosL[2] = pos[2];
-
-			lastVelL[0] = lastVel[0];
-			lastVelL[1] = lastVel[1];
-			lastVelL[2] = lastVel[2];
-
-			lastRotL[0] = cd.rot_quat[0];
-			lastRotL[1] = cd.rot_quat[1];
-			lastRotL[2] = cd.rot_quat[2];
-
-			lastRotVelL[0] = lastRotVel[0];
-			lastRotVelL[1] = lastRotVel[1];
-			lastRotVelL[2] = lastRotVel[2];
-		}
+		lastRotVel[0] = accelAng[0];
+		lastRotVel[1] = accelAng[1];
+		lastRotVel[2] = accelAng[2];
 
 		//Set Velocity
 		m_Pose.vecVelocity[0] = vel[0];
@@ -1057,6 +1017,7 @@ void CHydraHmdLatest::UpdateTrackingState( sixenseControllerData & cd )
 		m_Pose.vecAngularAcceleration[0] = accelAng[0];
 		m_Pose.vecAngularAcceleration[1] = accelAng[1];
 		m_Pose.vecAngularAcceleration[2] = accelAng[2];
+		*/
 
 	}
 
