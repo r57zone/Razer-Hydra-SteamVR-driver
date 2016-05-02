@@ -144,8 +144,7 @@ private:
 	// Ancillary tracking state
 	sixenseMath::Vector3 m_WorldFromDriverTranslation;
 	sixenseMath::Quat m_WorldFromDriverRotation;
-	sixenseUtils::Derivatives m_Velocity;
-	sixenseUtils::Derivatives m_Acceleration;
+	sixenseUtils::Derivatives m_Deriv;
 	enum { k_eHemisphereTrackingDisabled, k_eHemisphereTrackingButtonDown, k_eHemisphereTrackingEnabled } m_eHemisphereTrackingState;
 	bool m_bCalibrated;
 

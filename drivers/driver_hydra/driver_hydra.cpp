@@ -848,24 +848,22 @@ void CHydraHmdLatest::UpdateTrackingState( sixenseControllerData & cd )
 	m_Pose.vecDriverFromHeadTranslation[1] =  0.06413f;
 	m_Pose.vecDriverFromHeadTranslation[2] = -0.08695f;
 
+	// Set position
 	Vector3 pos = Vector3( cd.pos ) * k_fScaleSixenseToMeters;
 	m_Pose.vecPosition[0] = pos[0];
 	m_Pose.vecPosition[1] = pos[1];
 	m_Pose.vecPosition[2] = pos[2];
 
+	// Set rotational coordinates
+	m_Pose.qRotation.w = cd.rot_quat[3];
+	m_Pose.qRotation.x = cd.rot_quat[0];
+	m_Pose.qRotation.y = cd.rot_quat[1];
+	m_Pose.qRotation.z = cd.rot_quat[2];
+
+	// Update Sixense Utils data
+	m_Deriv.update(&cd);
 
 	if (!m_bEnableIMUEmulation) {
-		// Note that using first-order derivatives of position is a terrible
-		// way to actually supply velocity to the driver.  Good prediction is
-		// required to compensate for unavoidable system latencies, and having
-		// a good velocity estimate is key to that.  Any serious driver should
-		// be doing sensor fusion with an IMU, and should have some decent
-		// notion of instantaneous velocity.
-		// (Also I have no idea what shenanigans are going on in this sixense_utils
-		// class, so I hope it's reasonable)
-		m_Velocity.update( &cd );
-		Vector3 vel = m_Velocity.getVelocity() * k_fScaleSixenseToMeters;
-
 		// The tradeoff here is that setting a valid velocity causes the controllers
 		// to jitter, but the controllers feel much more "alive" and lighter.
 		// The jitter while stationary is more annoying than the laggy feeling caused
@@ -884,12 +882,6 @@ void CHydraHmdLatest::UpdateTrackingState( sixenseControllerData & cd )
 		m_Pose.vecAcceleration[1] = 0.0;
 		m_Pose.vecAcceleration[2] = 0.0;
 
-		//Set rotational coordinates
-		m_Pose.qRotation.w = cd.rot_quat[3];
-		m_Pose.qRotation.x = cd.rot_quat[0];
-		m_Pose.qRotation.y = cd.rot_quat[1];
-		m_Pose.qRotation.z = cd.rot_quat[2];
-
 		// Unmeasured.  XXX with no angular velocity, throwing might not work in some games
 		m_Pose.vecAngularVelocity[0] = 0.0;
 		m_Pose.vecAngularVelocity[1] = 0.0;
@@ -903,30 +895,35 @@ void CHydraHmdLatest::UpdateTrackingState( sixenseControllerData & cd )
 
 	} else { // Experimental IMU Emulation
 
-		m_Velocity.update(&cd);
-		Vector3 vel = m_Velocity.getVelocity() * k_fScaleSixenseToMeters;
+		// Note that using first-order derivatives of position is a terrible
+		// way to actually supply velocity to the driver.  Good prediction is
+		// required to compensate for unavoidable system latencies, and having
+		// a good velocity estimate is key to that.  Any serious driver should
+		// be doing sensor fusion with an IMU, and should have some decent
+		// notion of instantaneous velocity.
+		// (Also I have no idea what shenanigans are going on in this sixense_utils
+		// class, so I hope it's reasonable)
+		Vector3 vel = m_Deriv.getVelocity() * k_fScaleSixenseToMeters;
 		m_Pose.vecVelocity[0] = vel[0];
 		m_Pose.vecVelocity[1] = vel[1];
 		m_Pose.vecVelocity[2] = vel[2];
+		//DriverLog("Sixense vel: %f, %f, %f \n", vel[0], vel[1], vel[2]);
 
-		m_Acceleration.update(&cd);
-		Vector3 acc = m_Acceleration.getAcceleration() * k_fScaleSixenseToMeters;
+		Vector3 acc = m_Deriv.getAcceleration() * k_fScaleSixenseToMeters;
 		m_Pose.vecAcceleration[0] = acc[0];
 		m_Pose.vecAcceleration[1] = acc[1];
 		m_Pose.vecAcceleration[2] = acc[2];
+		//DriverLog("Sixense acc: %f, %f, %f \n", acc[0], acc[1], acc[2]);
 
-		m_Pose.qRotation.w = cd.rot_quat[3];
-		m_Pose.qRotation.x = cd.rot_quat[0];
-		m_Pose.qRotation.y = cd.rot_quat[1];
-		m_Pose.qRotation.z = cd.rot_quat[2];
+		// @TODO: angular velocity
+		m_Pose.vecAngularVelocity[0] = 0.0f;
+		m_Pose.vecAngularVelocity[1] = 0.0f;
+		m_Pose.vecAngularVelocity[2] = 0.0f;
 
-		m_Pose.vecAngularVelocity[0] = 0.0;
-		m_Pose.vecAngularVelocity[1] = 0.0;
-		m_Pose.vecAngularVelocity[2] = 0.0;
-
-		m_Pose.vecAngularAcceleration[0] = 0.0;
-		m_Pose.vecAngularAcceleration[1] = 0.0;
-		m_Pose.vecAngularAcceleration[2] = 0.0;
+		// @TODO: angular acceleration
+		m_Pose.vecAngularAcceleration[0] = 0.0f;
+		m_Pose.vecAngularAcceleration[1] = 0.0f;
+		m_Pose.vecAngularAcceleration[2] = 0.0f;
 
 		/*
 		//Temporary values for extrapolating velocity, accleration, angular velocity and angular accleration.
