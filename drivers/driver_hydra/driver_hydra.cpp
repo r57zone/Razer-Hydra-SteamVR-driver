@@ -464,16 +464,15 @@ CHydraHmdLatest::CHydraHmdLatest( vr::IServerDriverHost * pDriverHost, int base,
 	settings_ = m_pDriverHost->GetSettings(vr::IVRSettings_Version);
 	char tmp_[32];
 
-	// Load rendermodel
-	settings_->GetString("hydra", "renderModel", tmp_, sizeof(tmp_), "{hydra}hydra_controller");
+	// renderModel: assign a rendermodel
+	settings_->GetString("hydra", "renderModel", tmp_, sizeof(tmp_), "vr_controller_vive_1_5");
 	m_strRenderModel.assign(tmp_, sizeof(tmp_));
 
-	// Enable experimental features
+	// enableIMUEmulation: enable experimental IMU emulation at startup
 	m_bEnableIMUEmulation = settings_->GetBool("hydra", "enableIMUEmulation", false);
 
-	if (m_bEnableIMUEmulation) {
-		DriverLog("Experimental IMU emulation enabled.\n");
-	}
+	// joystickDeadzone: set joystick deadzone
+	m_fJoystickDeadzone = settings_->GetFloat("hydra", "joystickDeadzone", 0.08f);
 
 }
 
@@ -766,7 +765,7 @@ void CHydraHmdLatest::UpdateControllerState( sixenseControllerData & cd )
 	if ( cd.trigger > 0.8f )
 		NewState.ulButtonPressed |= vr::ButtonMaskFromId( vr::k_EButton_Axis1 );
 	// sixense driver seems to have good deadzone, but add a small one here
-	if ( fabsf( cd.joystick_x ) > 0.05f || fabsf( cd.joystick_y ) > 0.05f )
+	if ( fabsf( cd.joystick_x ) > m_fJoystickDeadzone || fabsf( cd.joystick_y ) > m_fJoystickDeadzone )
 		NewState.ulButtonTouched |= vr::ButtonMaskFromId( vr::k_EButton_Axis0 );
 
 	// All pressed buttons are touched

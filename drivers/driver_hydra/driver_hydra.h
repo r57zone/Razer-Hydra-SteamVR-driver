@@ -165,8 +165,9 @@ private:
 	// The rendermodel used by the device. Check the contents of "c:\Program Files (x86)\Steam\steamapps\common\SteamVR\resources\rendermodels" for available models.
 	std::string m_strRenderModel;
 
-	// IMU emulation experiment
+	// Settings values
 	bool m_bEnableIMUEmulation;
+	float m_fJoystickDeadzone;
 
 	/*
 	//Last position for velocity & acceleration extrapolation.

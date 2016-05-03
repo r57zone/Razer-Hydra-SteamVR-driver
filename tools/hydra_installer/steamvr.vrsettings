@@ -4,12 +4,9 @@
       "CollisionBoundsStyle" : 0
    },
    "hydra" : {
-      // These are built-in rendermodels from the "SteamVR\resources\rendermodels" directory.
-      //"renderModel" : "steam_controller_03_gordon"
-      //"renderModel" : "vr_controller_01_mrhat"
-      //"renderModel" : "vr_controller_05_wireless_b"
-      //"renderModel" : "vr_controller_02_mrhat_puck"
+      "joystickDeadzone" : 0.08,
       "renderModel" : "vr_controller_vive_1_5"
+      //"renderModel" : "{hydra}hydra_controller"
    },
    "jsonid" : "vrsettings",
    "keyboard" : {
