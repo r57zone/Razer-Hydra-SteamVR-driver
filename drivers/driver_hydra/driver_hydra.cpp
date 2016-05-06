@@ -5,6 +5,7 @@
 
 #include "stdafx.h"
 #include "pch.h"
+#include <Eigen/Geometry>
 #include "driver_hydra.h"
 #include <sixense.h>
 #include <sixense_math.hpp>
@@ -470,6 +471,7 @@ CHydraHmdLatest::CHydraHmdLatest( vr::IServerDriverHost * pDriverHost, int base,
 
 	// enableIMUEmulation: enable experimental IMU emulation at startup
 	m_bEnableIMUEmulation = settings_->GetBool("hydra", "enableIMUEmulation", false);
+	m_bEnableAngularVelocity = true;
 
 	// joystickDeadzone: set joystick deadzone
 	m_fJoystickDeadzone = settings_->GetFloat("hydra", "joystickDeadzone", 0.08f);
@@ -744,12 +746,19 @@ void CHydraHmdLatest::UpdateControllerState( sixenseControllerData & cd )
 
 	if (cd.buttons & SIXENSE_BUTTON_1) {
 		// Button 1 on the hydra toggles the imu emulation
-		if (!(m_ControllerState.ulButtonPressed & vr::ButtonMaskFromId(k_EButton_Button1)))
+		if (!(m_ControllerState.ulButtonPressed & vr::ButtonMaskFromId(k_EButton_Button1))) {
 			m_bEnableIMUEmulation = !m_bEnableIMUEmulation;
+			m_bHasUpdateHistory = false;
+		}
 		NewState.ulButtonPressed |= vr::ButtonMaskFromId(k_EButton_Button1);
 	}
-	if ( cd.buttons & SIXENSE_BUTTON_2 )
-		NewState.ulButtonPressed |= vr::ButtonMaskFromId( k_EButton_Button2 );
+	if (cd.buttons & SIXENSE_BUTTON_2) {
+		// Button 2 toggles angular velocity
+		if (!(m_ControllerState.ulButtonPressed & vr::ButtonMaskFromId(k_EButton_Button2))) {
+			m_bEnableAngularVelocity = !m_bEnableAngularVelocity;
+		}
+		NewState.ulButtonPressed |= vr::ButtonMaskFromId(k_EButton_Button2);
+	}
 	if ( cd.buttons & SIXENSE_BUTTON_3 )
 		NewState.ulButtonPressed |= vr::ButtonMaskFromId( k_EButton_Button3 );
 	if ( cd.buttons & SIXENSE_BUTTON_4 )
@@ -894,127 +903,58 @@ void CHydraHmdLatest::UpdateTrackingState( sixenseControllerData & cd )
 
 	} else { // Experimental IMU Emulation
 
-		// Note that using first-order derivatives of position is a terrible
-		// way to actually supply velocity to the driver.  Good prediction is
-		// required to compensate for unavoidable system latencies, and having
-		// a good velocity estimate is key to that.  Any serious driver should
-		// be doing sensor fusion with an IMU, and should have some decent
-		// notion of instantaneous velocity.
-		// (Also I have no idea what shenanigans are going on in this sixense_utils
-		// class, so I hope it's reasonable)
+		// Get velocity from sixense_utils
 		Vector3 vel = m_Deriv.getVelocity() * k_fScaleSixenseToMeters;
 		m_Pose.vecVelocity[0] = vel[0];
 		m_Pose.vecVelocity[1] = vel[1];
 		m_Pose.vecVelocity[2] = vel[2];
 		//DriverLog("Sixense vel: %f, %f, %f \n", vel[0], vel[1], vel[2]);
 
+		// Get acceleration from sixense_utils
 		Vector3 acc = m_Deriv.getAcceleration() * k_fScaleSixenseToMeters;
 		m_Pose.vecAcceleration[0] = acc[0];
 		m_Pose.vecAcceleration[1] = acc[1];
 		m_Pose.vecAcceleration[2] = acc[2];
 		//DriverLog("Sixense acc: %f, %f, %f \n", acc[0], acc[1], acc[2]);
 
-		// @TODO: angular velocity
-		m_Pose.vecAngularVelocity[0] = 0.0f;
-		m_Pose.vecAngularVelocity[1] = 0.0f;
-		m_Pose.vecAngularVelocity[2] = 0.0f;
+		// Calculate angular velocity
+		Eigen::Quaternionf rotation_ = Eigen::Quaternionf(cd.rot_quat[3], cd.rot_quat[0], cd.rot_quat[1], cd.rot_quat[2]);
+		if (m_bHasUpdateHistory && m_bEnableAngularVelocity) {
+			int updatetime_ = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - m_ControllerLastUpdateTime).count();
 
-		// @TODO: angular acceleration
+			// https://en.wikipedia.org/wiki/Slerp
+			Eigen::Quaternionf slerp_ = m_ControllerLastRotation.slerp(1, rotation_);
+
+			// the vector part of the slerp is the angular velocity's axis of rotation
+			Eigen::Vector3f angvel_ = slerp_.vec();
+
+			// convert it to unit vector
+			angvel_.normalize();
+
+			// the magnitude of the angle/axis type vector is the speed of the rotation around the axis in rad/s
+			angvel_ = angvel_ * (m_ControllerLastRotation.angularDistance(rotation_) * 1000 * 1000 / updatetime_);
+
+			m_Pose.vecAngularVelocity[0] = angvel_.x();
+			m_Pose.vecAngularVelocity[1] = angvel_.y();
+			m_Pose.vecAngularVelocity[2] = angvel_.z();
+			//DriverLog("angvel: %f, %f, %f \n", angvel_.x(), angvel_.y(), angvel_.z());
+		}
+		else {
+			m_Pose.vecAngularVelocity[0] = 0.0f;
+			m_Pose.vecAngularVelocity[1] = 0.0f;
+			m_Pose.vecAngularVelocity[2] = 0.0f;
+			m_bHasUpdateHistory = true;
+		}
+
+		// Angular acceleration: the Unity steamVR plugin only provides angular velocity 
+		// for the controller, so probably this is not too important.
 		m_Pose.vecAngularAcceleration[0] = 0.0f;
 		m_Pose.vecAngularAcceleration[1] = 0.0f;
 		m_Pose.vecAngularAcceleration[2] = 0.0f;
 
-		/*
-		//Temporary values for extrapolating velocity, accleration, angular velocity and angular accleration.
-		Vector3 vel;
-		Vector3 accel;
-		Vector3 velAng;
-		Vector3 accelAng;
-
-		//Used by betavr to extrapolate acelleration. However, we're going to be taking the deritivive of using the previous stored velocity.
-		float permanent_acceleration_ratio = 0.1;
-		//Parameter to adjust jitter.
-		float dampening = 0.1;
-		//Deadzone for velocity and acceleration rates.
-		float minimum = 0.01;
-		//Refresh ratio of hydra 125hz.
-		float refresh = 125;
-
-		//Extrapolate Velocity
-		vel[0] = (pos[0] - lastPos[0]) * refresh * dampening;
-		//if (vel[0] < minimum && vel[0] > -minimum) vel[0] = 0;
-		vel[1] = (pos[1] - lastPos[1]) * refresh * dampening;
-		//if (vel[1] < minimum && vel[1] > -minimum) vel[1] = 0;
-		vel[2] = (pos[2] - lastPos[2]) * refresh * dampening;
-		//if (vel[2] < minimum && vel[2] > -minimum) vel[2] = 0;
-
-		//Extrapolate Acceleration
-		accel[0] = (vel[0] - lastVel[0]) * refresh;
-		//if (accel[0] < minimum && accel[0] > -minimum) accel[0] = 0;
-		accel[1] = (vel[1] - lastVel[1]) * refresh;
-		//if (accel[1] < minimum && accel[1] > -minimum) accel[1] = 0;
-		accel[2] = (vel[2] - lastVel[2]) * refresh;
-		//if (accel[2] < minimum && accel[2] > -minimum) accel[2] = 0;
-
-		//Extrapolate Angular Velocity
-		velAng[0] = (cd.rot_quat[0] - lastRot[0]) * refresh * dampening;
-		//if (velAng[0] < minimum && velAng[0] > -minimum) velAng[0] = 0;
-		velAng[1] = (cd.rot_quat[1] - lastRot[1]) * refresh * dampening;
-		//if (velAng[1] < minimum && velAng[1] > -minimum) velAng[1] = 0;
-		velAng[2] = (cd.rot_quat[2] - lastRot[2]) * refresh * dampening;
-		//if (velAng[2] < minimum && velAng[2] > -minimum) velAng[2] = 0;
-
-		//Extrapolate Angular Acceleration
-		accelAng[0] = (velAng[0] - lastRotVel[0]) * refresh;
-		//if (accelAng[0] < minimum && accelAng[0] > -minimum) accelAng[0] = 0;
-		accelAng[1] = (velAng[1] - lastRotVel[1]) * refresh;
-		//if (accelAng[1] < minimum && accelAng[1] > -minimum) accelAng[1] = 0;
-		accelAng[2] = (velAng[2] - lastRotVel[2]) * refresh;
-		//if (accelAng[2] < minimum && accelAng[2] > -minimum) accelAng[2] = 0;
-
-		lastPos[0] = pos[0];
-		lastPos[1] = pos[1];
-		lastPos[2] = pos[2];
-
-		lastVel[0] = vel[0];
-		lastVel[1] = vel[1];
-		lastVel[2] = vel[2];
-
-		lastRot[0] = cd.rot_quat[0];
-		lastRot[1] = cd.rot_quat[1];
-		lastRot[2] = cd.rot_quat[2];
-
-		lastRotVel[0] = accelAng[0];
-		lastRotVel[1] = accelAng[1];
-		lastRotVel[2] = accelAng[2];
-
-		//Set Velocity
-		m_Pose.vecVelocity[0] = vel[0];
-		m_Pose.vecVelocity[1] = vel[1];
-		m_Pose.vecVelocity[2] = vel[2];
-
-		//Set acelleration.
-		m_Pose.vecAcceleration[0] = accel[0];
-		m_Pose.vecAcceleration[1] = accel[1];
-		m_Pose.vecAcceleration[2] = accel[2];
-
-		//Set rotational coordinates
-		m_Pose.qRotation.w = cd.rot_quat[3];
-		m_Pose.qRotation.x = cd.rot_quat[0];
-		m_Pose.qRotation.y = cd.rot_quat[1];
-		m_Pose.qRotation.z = cd.rot_quat[2];
-
-		// Set angular velocity.
-		m_Pose.vecAngularVelocity[0] = velAng[0];
-		m_Pose.vecAngularVelocity[1] = velAng[1];
-		m_Pose.vecAngularVelocity[2] = velAng[2];
-
-		// Set angular accleration
-		m_Pose.vecAngularAcceleration[0] = accelAng[0];
-		m_Pose.vecAngularAcceleration[1] = accelAng[1];
-		m_Pose.vecAngularAcceleration[2] = accelAng[2];
-		*/
-
+		// Refresh the history
+		m_ControllerLastUpdateTime = std::chrono::steady_clock::now();
+		m_ControllerLastRotation = rotation_;
 	}
 
 	// Don't show user any controllers until they have hemisphere tracking and

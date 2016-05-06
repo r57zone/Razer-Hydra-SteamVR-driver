@@ -113,6 +113,7 @@ public:
 	static void RealignCoordinates( CHydraHmdLatest * pHydraA, CHydraHmdLatest * pHydraB );
 	void FinishRealignCoordinates( sixenseMath::Matrix3 & matHmdRotation, sixenseMath::Vector3 &vecHmdPosition );
 
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 private:
 	static const float k_fScaleSixenseToMeters;
 	static const std::chrono::milliseconds k_SystemButtonChordingDelay;
@@ -164,6 +165,12 @@ private:
 
 	// The rendermodel used by the device. Check the contents of "c:\Program Files (x86)\Steam\steamapps\common\SteamVR\resources\rendermodels" for available models.
 	std::string m_strRenderModel;
+
+	// Used for calculating angular momentum
+	std::chrono::steady_clock::time_point m_ControllerLastUpdateTime;
+	Eigen::Quaternionf m_ControllerLastRotation;
+	bool m_bHasUpdateHistory;
+	bool m_bEnableAngularVelocity;
 
 	// Settings values
 	bool m_bEnableIMUEmulation;
