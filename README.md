@@ -4,10 +4,13 @@
 
 ## Installation
 
-Download the latest release (steamvr_hydra_driver_vx.x.x.x.zip) from: https://github.com/betavr/steamvr_driver_hydra/releases/latest
+You can download the latest executable installer (steamvr_hydra_driver_vx.x.x.x.zip) from:
+https://github.com/betavr/steamvr_driver_hydra/releases/latest
 
-For more detailed instructions please visit the wiki: https://github.com/betavr/steamvr_driver_hydra/wiki
+For more detailed instructions please visit the wiki:
+https://github.com/betavr/steamvr_driver_hydra/wiki
 
 ## Building
 
-To build the driver follow the instructions of our parent project: https://github.com/ValveSoftware/driver_hydra
+To build the driver follow the instructions of our parent project:
+https://github.com/ValveSoftware/driver_hydra
