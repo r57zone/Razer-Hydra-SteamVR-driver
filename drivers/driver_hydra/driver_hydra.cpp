@@ -908,72 +908,77 @@ void CHydraHmdLatest::UpdateTrackingState( sixenseControllerData & cd )
 		// Get velocity from sixense_utils
 		Vector3 vel = m_Deriv.getVelocity() * k_fScaleSixenseToMeters;
 
-		// only react to greater movement to reduce jitter
-		if (vel.length() > 0.001f) {
-			m_Pose.vecVelocity[0] = vel[0];
-			m_Pose.vecVelocity[1] = vel[1];
-			m_Pose.vecVelocity[2] = vel[2];
-		}
-		else {
-			m_Pose.vecVelocity[0] = .0f;
-			m_Pose.vecVelocity[1] = .0f;
-			m_Pose.vecVelocity[2] = .0f;
-		}
-		//DriverLog("Sixense vel: %f, %f, %f \n", vel[0], vel[1], vel[2]);
-
 		// Get acceleration from sixense_utils
 		Vector3 acc = m_Deriv.getAcceleration() * k_fScaleSixenseToMeters;
 
-		// only react to greater movement to reduce jitter
-		if (acc.length() > 0.01f) {
-			m_Pose.vecAcceleration[0] = acc[0];
-			m_Pose.vecAcceleration[1] = acc[1];
-			m_Pose.vecAcceleration[2] = acc[2];
+		Eigen::Quaternionf rotation_ = Eigen::Quaternionf(cd.rot_quat[3], cd.rot_quat[0], cd.rot_quat[1], cd.rot_quat[2]);
+
+		if (m_bHasUpdateHistory) {
+
+			float expFactor_ = .1f; // exponential smoothing factor
+
+			// add sixense_utils velocity with smoothing
+			m_Pose.vecVelocity[0] = expFactor_ * vel[0] + (1 - expFactor_) * m_LastVelocity[0];
+			m_Pose.vecVelocity[1] = expFactor_ * vel[1] + (1 - expFactor_) * m_LastVelocity[1];
+			m_Pose.vecVelocity[2] = expFactor_ * vel[2] + (1 - expFactor_) * m_LastVelocity[2];
+			//DriverLog("Sixense vel: %f, %f, %f \n", vel[0], vel[1], vel[2]);
+
+			// add sixense_utils acceleration with smoothing
+			m_Pose.vecAcceleration[0] = expFactor_ * acc[0] + (1 - expFactor_) * m_LastAcceleration[0];
+			m_Pose.vecAcceleration[1] = expFactor_ * acc[1] + (1 - expFactor_) * m_LastAcceleration[1];
+			m_Pose.vecAcceleration[2] = expFactor_ * acc[2] + (1 - expFactor_) * m_LastAcceleration[2];
+			//DriverLog("Sixense acc: %f, %f, %f \n", acc[0], acc[1], acc[2]);
+
+			// Calculate angular velocity
+			if (m_bEnableAngularVelocity) {
+
+				// the angular velocity's axis of rotation is the difference of the last two quats
+				Eigen::Quaternionf diff_ = m_ControllerLastRotation.conjugate() * rotation_;
+				Eigen::AngleAxisf angax_ = Eigen::AngleAxisf(diff_);
+				Eigen::Vector3f angvel_ = angax_.axis();
+
+				// get angular distance of current rotation from last rotation
+				float angdist_ = m_ControllerLastRotation.angularDistance(rotation_);
+
+				// the magnitude of the special angle/axis type vector is the speed of the rotation around the axis in rad/s
+				angvel_ = angvel_ * (angdist_ * 1000 * 1000 / updatetime_);
+
+				// add the calculated angular velocity with smoothing applied
+				m_Pose.vecAngularVelocity[0] = expFactor_ * angvel_.x() + (1 - expFactor_) * m_LastAngularVelocity.x();
+				m_Pose.vecAngularVelocity[1] = expFactor_ * angvel_.y() + (1 - expFactor_) * m_LastAngularVelocity.y();
+				m_Pose.vecAngularVelocity[2] = expFactor_ * angvel_.z() + (1 - expFactor_) * m_LastAngularVelocity.z();
+				//DriverLog("angvel: ad: %f, x: %f, y: %f, z: %f \n", m_ControllerLastRotation.angularDistance(rotation_), angvel_.x(), angvel_.y(), angvel_.z());
+
+				m_LastAngularVelocity = angvel_; // refresh history
+			}
+
 		}
 		else {
 			m_Pose.vecAcceleration[0] = .0f;
 			m_Pose.vecAcceleration[1] = .0f;
 			m_Pose.vecAcceleration[2] = .0f;
-		}
-		//DriverLog("Sixense acc: %f, %f, %f \n", acc[0], acc[1], acc[2]);
 
-		// Calculate angular velocity
-		Eigen::Quaternionf rotation_ = Eigen::Quaternionf(cd.rot_quat[3], cd.rot_quat[0], cd.rot_quat[1], cd.rot_quat[2]);
-		if (m_bHasUpdateHistory && m_bEnableAngularVelocity) {
+			m_Pose.vecVelocity[0] = .0f;
+			m_Pose.vecVelocity[1] = .0f;
+			m_Pose.vecVelocity[2] = .0f;
 
-			// the angular velocity's axis of rotation is the difference of the last two quats
-			Eigen::Quaternionf diff_ = m_ControllerLastRotation.conjugate() * rotation_;
-			Eigen::AngleAxisf angax_ = Eigen::AngleAxisf(diff_);
-			Eigen::Vector3f angvel_ = angax_.axis();
+			m_Pose.vecAngularVelocity[0] = .0f;
+			m_Pose.vecAngularVelocity[1] = .0f;
+			m_Pose.vecAngularVelocity[2] = .0f;
 
-			// get angular distance of current rotation from last rotation
-			float angdist_ = m_ControllerLastRotation.angularDistance(rotation_);
+			m_LastAngularVelocity[0] = .0f;
+			m_LastAngularVelocity[1] = .0f;
+			m_LastAngularVelocity[2] = .0f;
 
-			// only react to greater movement to reduce jitter
-			if (angdist_ > .0002f) {
-				// the magnitude of the special angle/axis type vector is the speed of the rotation around the axis in rad/s
-				angvel_ = angvel_ * (angdist_ * 1000 * 1000 / updatetime_ / 3); // need to divide by 3 to reduce jitter to an acceptable level
-				m_Pose.vecAngularVelocity[0] = angvel_.x();
-				m_Pose.vecAngularVelocity[1] = angvel_.y();
-				m_Pose.vecAngularVelocity[2] = angvel_.z();
-			}
-			else {
-				m_Pose.vecAngularVelocity[0] = 0.0f;
-				m_Pose.vecAngularVelocity[1] = 0.0f;
-				m_Pose.vecAngularVelocity[2] = 0.0f;
-			}
-			//DriverLog("angvel: ad: %f, x: %f, y: %f, z: %f \n", m_ControllerLastRotation.angularDistance(rotation_), angvel_.x(), angvel_.y(), angvel_.z());
-		}
-		else {
-			m_Pose.vecAngularVelocity[0] = 0.0f;
-			m_Pose.vecAngularVelocity[1] = 0.0f;
-			m_Pose.vecAngularVelocity[2] = 0.0f;
 			m_bHasUpdateHistory = true;
 		}
+
 
 		// Refresh the history
 		m_ControllerLastUpdateTime = std::chrono::steady_clock::now();
 		m_ControllerLastRotation = rotation_;
+		m_LastVelocity = vel;
+		m_LastAcceleration = acc;
 	}
 
 	// Don't show user any controllers until they have hemisphere tracking and

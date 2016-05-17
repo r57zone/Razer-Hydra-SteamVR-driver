@@ -166,9 +166,12 @@ private:
 	// The rendermodel used by the device. Check the contents of "c:\Program Files (x86)\Steam\steamapps\common\SteamVR\resources\rendermodels" for available models.
 	std::string m_strRenderModel;
 
-	// Used for calculating angular momentum
+	// IMU emulation things
 	std::chrono::steady_clock::time_point m_ControllerLastUpdateTime;
 	Eigen::Quaternionf m_ControllerLastRotation;
+	sixenseMath::Vector3 m_LastVelocity;
+	sixenseMath::Vector3 m_LastAcceleration;
+	Eigen::Vector3f m_LastAngularVelocity;
 	bool m_bHasUpdateHistory;
 	bool m_bEnableAngularVelocity;
 
