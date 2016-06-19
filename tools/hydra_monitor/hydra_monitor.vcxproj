@@ -103,7 +103,8 @@
       <Command>mkdir "$(InstallDir)\bin\$(Platform)"
 copy "$(OpenVRDir)\bin\$(Platform)\openvr_api.dll" "$(TargetDir)"
 copy "$(OutDir)$(TargetName)$(TargetExt)" "$(InstallDir)\bin\$(Platform)"
-copy "$(OpenVRDir)\bin\$(Platform)\openvr_api.dll" "$(InstallDir)\bin\$(Platform)"</Command>
+copy "$(OpenVRDir)\bin\$(Platform)\openvr_api.dll" "$(InstallDir)\bin\$(Platform)"
+</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -124,7 +125,8 @@ copy "$(OpenVRDir)\bin\$(Platform)\openvr_api.dll" "$(InstallDir)\bin\$(Platform
       <Command>mkdir "$(InstallDir)\bin\$(Platform)"
 copy "$(OpenVRDir)\bin\$(Platform)\openvr_api.dll" "$(TargetDir)"
 copy "$(OutDir)$(TargetName)$(TargetExt)" "$(InstallDir)\bin\$(Platform)"
-copy "$(OpenVRDir)\bin\$(Platform)\openvr_api.dll" "$(InstallDir)\bin\$(Platform)"</Command>
+copy "$(OpenVRDir)\bin\$(Platform)\openvr_api.dll" "$(InstallDir)\bin\$(Platform)"
+</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -149,7 +151,8 @@ copy "$(OpenVRDir)\bin\$(Platform)\openvr_api.dll" "$(InstallDir)\bin\$(Platform
       <Command>mkdir "$(InstallDir)\bin\$(Platform)"
 copy "$(OpenVRDir)\bin\$(Platform)\openvr_api.dll" "$(TargetDir)"
 copy "$(OutDir)$(TargetName)$(TargetExt)" "$(InstallDir)\bin\$(Platform)"
-copy "$(OpenVRDir)\bin\$(Platform)\openvr_api.dll" "$(InstallDir)\bin\$(Platform)"</Command>
+copy "$(OpenVRDir)\bin\$(Platform)\openvr_api.dll" "$(InstallDir)\bin\$(Platform)"
+</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -174,7 +177,8 @@ copy "$(OpenVRDir)\bin\$(Platform)\openvr_api.dll" "$(InstallDir)\bin\$(Platform
       <Command>mkdir "$(InstallDir)\bin\$(Platform)"
 copy "$(OpenVRDir)\bin\$(Platform)\openvr_api.dll" "$(TargetDir)"
 copy "$(OutDir)$(TargetName)$(TargetExt)" "$(InstallDir)\bin\$(Platform)"
-copy "$(OpenVRDir)\bin\$(Platform)\openvr_api.dll" "$(InstallDir)\bin\$(Platform)"</Command>
+copy "$(OpenVRDir)\bin\$(Platform)\openvr_api.dll" "$(InstallDir)\bin\$(Platform)"
+</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

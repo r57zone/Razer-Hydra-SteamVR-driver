@@ -125,7 +125,8 @@
 copy $(OutDir)$(TargetName)$(TargetExt) "$(InstallDir)\bin\$(Platform)"
 copy "$(SixenseSDKDir)\bin\$(Platform)\$(Configuration)_dll\*" "$(InstallDir)\bin\$(Platform)"
 "$(SteamVRRuntimeDir)\bin\win32\vrpathreg" adddriver "$(InstallDir)"
-xcopy /s /i /y "$(SolutionDir)\resources" "$(InstallDir)\resources"</Command>
+xcopy /s /i /y "$(SolutionDir)\resources" "$(InstallDir)\resources"
+</Command>
     </PostBuildEvent>
     <PostBuildEvent>
       <Message>Install Binary</Message>
@@ -158,7 +159,8 @@ xcopy /s /i /y "$(SolutionDir)\resources" "$(InstallDir)\resources"</Command>
 copy $(OutDir)$(TargetName)$(TargetExt) "$(InstallDir)\bin\$(Platform)"
 copy "$(SixenseSDKDir)\bin\$(Platform)\$(Configuration)_dll\*" "$(InstallDir)\bin\$(Platform)"
 "$(SteamVRRuntimeDir)\bin\win32\vrpathreg" adddriver "$(InstallDir)"
-xcopy /s /i /y "$(SolutionDir)\resources" "$(InstallDir)\resources"</Command>
+xcopy /s /i /y "$(SolutionDir)\resources" "$(InstallDir)\resources"
+</Command>
     </PostBuildEvent>
     <PostBuildEvent>
       <Message>Install Binary</Message>
@@ -206,7 +208,9 @@ xcopy /s /i /y "$(SolutionDir)\resources" "$(InstallDir)\resources"</Command>
 copy $(OutDir)$(TargetName)$(TargetExt) "$(InstallDir)\bin\$(Platform)"
 copy "$(SixenseSDKDir)\bin\$(Platform)\$(Configuration)_dll\*" "$(InstallDir)\bin\$(Platform)"
 "$(SteamVRRuntimeDir)\bin\win32\vrpathreg" adddriver "$(InstallDir)"
-xcopy /s /i /y "$(SolutionDir)\resources" "$(InstallDir)\resources"</Command>
+xcopy /s /i /y "$(SolutionDir)\resources" "$(InstallDir)\resources"
+xcopy /s /i /y "$(InstallDir)\bin\x64" "$(InstallDir)\bin\Win64"
+</Command>
       <Message>Install Binary</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -231,7 +235,9 @@ xcopy /s /i /y "$(SolutionDir)\resources" "$(InstallDir)\resources"</Command>
 copy $(OutDir)$(TargetName)$(TargetExt) "$(InstallDir)\bin\$(Platform)"
 copy "$(SixenseSDKDir)\bin\$(Platform)\$(Configuration)_dll\*" "$(InstallDir)\bin\$(Platform)"
 "$(SteamVRRuntimeDir)\bin\win32\vrpathreg" adddriver "$(InstallDir)"
-xcopy /s /i /y "$(SolutionDir)\resources" "$(InstallDir)\resources"</Command>
+xcopy /s /i /y "$(SolutionDir)\resources" "$(InstallDir)\resources"
+xcopy /s /i /y "$(InstallDir)\bin\x64" "$(InstallDir)\bin\Win64"
+</Command>
       <Message>Install Binary</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
