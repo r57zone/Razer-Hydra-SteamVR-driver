@@ -104,6 +104,7 @@
       <CompileAsWinRT>false</CompileAsWinRT>
       <AdditionalIncludeDirectories>$(SixenseSDKDir)\include;$(OpenVRDir)\headers;$(SolutionDir)vendor\eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <EnablePREfast>false</EnablePREfast>
+      <PrecompiledHeaderFile />
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -138,6 +139,7 @@ xcopy /s /i /y "$(SolutionDir)\resources" "$(InstallDir)\resources"
       <CompileAsWinRT>false</CompileAsWinRT>
       <AdditionalIncludeDirectories>$(SixenseSDKDir)\include;$(OpenVRDir)\headers;$(SolutionDir)vendor\eigen;$(SolutionDir)vendor\eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <EnablePREfast>false</EnablePREfast>
+      <PrecompiledHeaderFile />
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -190,15 +192,18 @@ xcopy /s /i /y "$(SolutionDir)\resources" "$(InstallDir)\resources"
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <CompileAsWinRT>false</CompileAsWinRT>
-      <AdditionalIncludeDirectories>$(SixenseSDKDir)\include;$(OpenVRDir)\headers;$(SolutionDir)vendor\eigen;$(SolutionDir)vendor\eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SixenseSDKDir)\include;$(OpenVRDir)\headers;$(SolutionDir)vendor\eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeaderFile />
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <GenerateWindowsMetadata>false</GenerateWindowsMetadata>
       <AdditionalLibraryDirectories>$(SixenseSDKDir)\lib\$(Platform)\$(Configuration)_dll;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
     </Link>
     <CustomBuildStep>
       <Message />
@@ -216,9 +221,10 @@ xcopy /s /i /y "$(InstallDir)\bin\x64" "$(InstallDir)\bin\Win64"
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <CompileAsWinRT>false</CompileAsWinRT>
       <AdditionalIncludeDirectories>$(SixenseSDKDir)\include;$(OpenVRDir)\headers;$(SolutionDir)vendor\eigen;$(SolutionDir)vendor\eigen;$(SolutionDir)vendor\eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeaderFile />
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -226,6 +232,8 @@ xcopy /s /i /y "$(InstallDir)\bin\x64" "$(InstallDir)\bin\Win64"
       <GenerateWindowsMetadata>false</GenerateWindowsMetadata>
       <AdditionalLibraryDirectories>$(SixenseSDKDir)\lib\$(Platform)\$(Configuration)_dll;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>sixense_x64.lib;sixense_utils_x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
     </Link>
     <CustomBuildStep>
       <Message />
