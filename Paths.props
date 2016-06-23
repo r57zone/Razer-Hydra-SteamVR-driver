@@ -4,7 +4,7 @@
   <PropertyGroup Label="UserMacros">
     <SteamVRRuntimeDir>C:\Program Files (x86)\steam\steamapps\common\SteamVR</SteamVRRuntimeDir>
     <OpenVRDir>c:\Users\beta\Source\Repos\openvr</OpenVRDir>
-    <SixenseSDKDir>d:\SteamLibrary\SteamApps\common\Sixense SDK\SixenseSDK</SixenseSDKDir>
+    <SixenseSDKDir>d:\_repos\SixenseSDK_102215</SixenseSDKDir>
     <InstallDir>D:\hydra</InstallDir>
   </PropertyGroup>
   <PropertyGroup />

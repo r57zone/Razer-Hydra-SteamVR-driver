@@ -110,7 +110,7 @@
       <SubSystem>Console</SubSystem>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <GenerateWindowsMetadata>false</GenerateWindowsMetadata>
-      <AdditionalLibraryDirectories>$(SixenseSDKDir)\lib\$(Platform)\$(Configuration)_dll;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SixenseSDKDir)\lib\$(Platform)\VS2015\$(Configuration)_dll;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>sixensed.lib;sixense_utilsd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <CustomBuildStep>
@@ -124,7 +124,7 @@
     <PostBuildEvent>
       <Command>mkdir "$(InstallDir)\bin\$(Platform)"
 copy $(OutDir)$(TargetName)$(TargetExt) "$(InstallDir)\bin\$(Platform)"
-copy "$(SixenseSDKDir)\bin\$(Platform)\$(Configuration)_dll\*" "$(InstallDir)\bin\$(Platform)"
+copy "$(SixenseSDKDir)\bin\$(Platform)\VS2015\$(Configuration)_dll\*" "$(InstallDir)\bin\$(Platform)"
 "$(SteamVRRuntimeDir)\bin\win32\vrpathreg" adddriver "$(InstallDir)"
 xcopy /s /i /y "$(SolutionDir)\resources" "$(InstallDir)\resources"
 </Command>
@@ -145,7 +145,7 @@ xcopy /s /i /y "$(SolutionDir)\resources" "$(InstallDir)\resources"
       <SubSystem>Console</SubSystem>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <GenerateWindowsMetadata>false</GenerateWindowsMetadata>
-      <AdditionalLibraryDirectories>$(SixenseSDKDir)\lib\$(Platform)\$(Configuration)_dll;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SixenseSDKDir)\lib\$(Platform)\VS2015\$(Configuration)_dll;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>sixense.lib;sixense_utils.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <CustomBuildStep>
@@ -159,7 +159,7 @@ xcopy /s /i /y "$(SolutionDir)\resources" "$(InstallDir)\resources"
     <PostBuildEvent>
       <Command>mkdir "$(InstallDir)\bin\$(Platform)"
 copy $(OutDir)$(TargetName)$(TargetExt) "$(InstallDir)\bin\$(Platform)"
-copy "$(SixenseSDKDir)\bin\$(Platform)\$(Configuration)_dll\*" "$(InstallDir)\bin\$(Platform)"
+copy "$(SixenseSDKDir)\bin\$(Platform)\VS2015\$(Configuration)_dll\*" "$(InstallDir)\bin\$(Platform)"
 "$(SteamVRRuntimeDir)\bin\win32\vrpathreg" adddriver "$(InstallDir)"
 xcopy /s /i /y "$(SolutionDir)\resources" "$(InstallDir)\resources"
 </Command>
@@ -201,9 +201,10 @@ xcopy /s /i /y "$(SolutionDir)\resources" "$(InstallDir)\resources"
       <SubSystem>Console</SubSystem>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <GenerateWindowsMetadata>false</GenerateWindowsMetadata>
-      <AdditionalLibraryDirectories>$(SixenseSDKDir)\lib\$(Platform)\$(Configuration)_dll;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SixenseSDKDir)\lib\$(Platform)\VS2015\$(Configuration)_dll;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <AdditionalDependencies>sixensed_x64.lib;sixense_utilsd_x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <CustomBuildStep>
       <Message />
@@ -211,7 +212,7 @@ xcopy /s /i /y "$(SolutionDir)\resources" "$(InstallDir)\resources"
     <PostBuildEvent>
       <Command>mkdir "$(InstallDir)\bin\$(Platform)"
 copy $(OutDir)$(TargetName)$(TargetExt) "$(InstallDir)\bin\$(Platform)"
-copy "$(SixenseSDKDir)\bin\$(Platform)\$(Configuration)_dll\*" "$(InstallDir)\bin\$(Platform)"
+copy "$(SixenseSDKDir)\bin\$(Platform)\VS2015\$(Configuration)_dll\*" "$(InstallDir)\bin\$(Platform)"
 "$(SteamVRRuntimeDir)\bin\win32\vrpathreg" adddriver "$(InstallDir)"
 xcopy /s /i /y "$(SolutionDir)\resources" "$(InstallDir)\resources"
 xcopy /s /i /y "$(InstallDir)\bin\x64" "$(InstallDir)\bin\Win64"
@@ -230,7 +231,7 @@ xcopy /s /i /y "$(InstallDir)\bin\x64" "$(InstallDir)\bin\Win64"
       <SubSystem>Console</SubSystem>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <GenerateWindowsMetadata>false</GenerateWindowsMetadata>
-      <AdditionalLibraryDirectories>$(SixenseSDKDir)\lib\$(Platform)\$(Configuration)_dll;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SixenseSDKDir)\lib\$(Platform)\VS2015\$(Configuration)_dll;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>sixense_x64.lib;sixense_utils_x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -241,7 +242,7 @@ xcopy /s /i /y "$(InstallDir)\bin\x64" "$(InstallDir)\bin\Win64"
     <PostBuildEvent>
       <Command>mkdir "$(InstallDir)\bin\$(Platform)"
 copy $(OutDir)$(TargetName)$(TargetExt) "$(InstallDir)\bin\$(Platform)"
-copy "$(SixenseSDKDir)\bin\$(Platform)\$(Configuration)_dll\*" "$(InstallDir)\bin\$(Platform)"
+copy "$(SixenseSDKDir)\bin\$(Platform)\VS2015\$(Configuration)_dll\*" "$(InstallDir)\bin\$(Platform)"
 "$(SteamVRRuntimeDir)\bin\win32\vrpathreg" adddriver "$(InstallDir)"
 xcopy /s /i /y "$(SolutionDir)\resources" "$(InstallDir)\resources"
 xcopy /s /i /y "$(InstallDir)\bin\x64" "$(InstallDir)\bin\Win64"

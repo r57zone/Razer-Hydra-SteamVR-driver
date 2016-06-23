@@ -147,7 +147,6 @@ private:
 	sixenseMath::Vector3 m_WorldFromDriverTranslation;
 	sixenseMath::Quat m_WorldFromDriverRotation;
 	sixenseUtils::Derivatives m_Deriv;
-	char padding_after_m_Deriv[8]; // DO NOT REMOVE! This extra padding is needed for protection against memory corruption on X64 platform. https://github.com/betavr/steamvr_driver_hydra/issues/18
 	enum { k_eHemisphereTrackingDisabled, k_eHemisphereTrackingButtonDown, k_eHemisphereTrackingEnabled } m_eHemisphereTrackingState;
 	bool m_bCalibrated;
 
