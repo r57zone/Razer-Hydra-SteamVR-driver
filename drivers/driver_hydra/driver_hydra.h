@@ -175,16 +175,11 @@ private:
 	Eigen::Vector3f m_LastAngularVelocity;
 	bool m_bHasUpdateHistory;
 	bool m_bEnableAngularVelocity;
+	bool m_bEnableHoldThumbpad;
 
-	// Settings values
+	// steamvr.vrsettings config values
 	bool m_bEnableIMUEmulation;
+	bool m_bEnableDeveloperMode;
 	float m_fJoystickDeadzone;
 
-	/*
-	//Last position for velocity & acceleration extrapolation.
-	sixenseMath::Vector3 lastPos;
-	sixenseMath::Vector3 lastVel;
-	sixenseMath::Quat lastRot;
-	sixenseMath::Quat lastRotVel;
-	*/
 };

@@ -454,12 +454,17 @@ CHydraHmdLatest::CHydraHmdLatest( vr::IServerDriverHost * pDriverHost, int base,
 	m_strRenderModel.assign(tmp_, sizeof(tmp_));
 
 	// enableIMUEmulation: enable experimental IMU emulation at startup
-	m_bEnableIMUEmulation = settings_->GetBool("hydra", "enableIMUEmulation", false);
+	m_bEnableIMUEmulation = settings_->GetBool("hydra", "enableIMUEmulationAtStart", false);
 	m_bEnableAngularVelocity = true;
 
 	// joystickDeadzone: set joystick deadzone
 	m_fJoystickDeadzone = settings_->GetFloat("hydra", "joystickDeadzone", 0.08f);
 
+	// enableDeveloperMode: enable developer features
+	m_bEnableDeveloperMode = settings_->GetBool("hydra", "enableDeveloperMode", false);
+
+	// "Hold Thumbpad" mode (not user configurable)
+	m_bEnableHoldThumbpad = true;
 }
 
 CHydraHmdLatest::~CHydraHmdLatest()
@@ -722,27 +727,48 @@ void CHydraHmdLatest::SendButtonUpdates( ButtonUpdate ButtonEvent, uint64_t ulMa
 
 void CHydraHmdLatest::UpdateControllerState( sixenseControllerData & cd )
 {
+	/**
+	 * Handling button presses for the user switchable features go here,
+	 * before the driver state is updated.
+	 */
+
+	// Button 1+2: toggles the IMU emulation
+	if ((cd.buttons & SIXENSE_BUTTON_1) && (cd.buttons & SIXENSE_BUTTON_2)) {
+		if (!(m_ControllerState.ulButtonPressed & vr::ButtonMaskFromId(k_EButton_Button1)) || !(m_ControllerState.ulButtonPressed & vr::ButtonMaskFromId(k_EButton_Button2))) {
+			m_bEnableIMUEmulation = !m_bEnableIMUEmulation;
+			m_bHasUpdateHistory = false;
+		}
+	}
+	// Button 2: toggles angular velocity on/off (only in developer mode)
+	else if (cd.buttons & SIXENSE_BUTTON_2) {
+		if (m_bEnableDeveloperMode && !(m_ControllerState.ulButtonPressed & vr::ButtonMaskFromId(k_EButton_Button2)))
+			m_bEnableAngularVelocity = !m_bEnableAngularVelocity;
+	}
+
+	// Button 3:
+	// Activates the "Hold Thumbpad" mode, which removes the 
+	// joystick deadzone while the button is pressed. This gives 
+	// the user the ability to play games that require placing 
+	// the thumb in the center of the touchpad without pressing it.
+	float effectiveJoyDeadzone = m_fJoystickDeadzone;
+	if (m_bEnableHoldThumbpad && (cd.buttons & SIXENSE_BUTTON_3))
+		effectiveJoyDeadzone = -1.0f;
+
+
+
+	/**
+	 * Update the driver state
+	 */
 	vr::VRControllerState_t NewState = { 0 };
 
 	// Changing unPacketNum tells anyone polling state that something might have
 	// changed.  We don't try to be precise about that here.
 	NewState.unPacketNum = m_ControllerState.unPacketNum + 1;
 
-	if (cd.buttons & SIXENSE_BUTTON_1) {
-		// Button 1 on the hydra toggles the imu emulation
-		if (!(m_ControllerState.ulButtonPressed & vr::ButtonMaskFromId(k_EButton_Button1))) {
-			m_bEnableIMUEmulation = !m_bEnableIMUEmulation;
-			m_bHasUpdateHistory = false;
-		}
+	if ( cd.buttons & SIXENSE_BUTTON_1 )
 		NewState.ulButtonPressed |= vr::ButtonMaskFromId(k_EButton_Button1);
-	}
-	if (cd.buttons & SIXENSE_BUTTON_2) {
-		// Button 2 toggles angular velocity
-		if (!(m_ControllerState.ulButtonPressed & vr::ButtonMaskFromId(k_EButton_Button2))) {
-			m_bEnableAngularVelocity = !m_bEnableAngularVelocity;
-		}
+	if ( cd.buttons & SIXENSE_BUTTON_2 )
 		NewState.ulButtonPressed |= vr::ButtonMaskFromId(k_EButton_Button2);
-	}
 	if ( cd.buttons & SIXENSE_BUTTON_3 )
 		NewState.ulButtonPressed |= vr::ButtonMaskFromId( k_EButton_Button3 );
 	if ( cd.buttons & SIXENSE_BUTTON_4 )
@@ -758,7 +784,7 @@ void CHydraHmdLatest::UpdateControllerState( sixenseControllerData & cd )
 	if ( cd.trigger > 0.8f )
 		NewState.ulButtonPressed |= vr::ButtonMaskFromId( vr::k_EButton_Axis1 );
 	// sixense driver seems to have good deadzone, but add a small one here
-	if ( fabsf( cd.joystick_x ) > m_fJoystickDeadzone || fabsf( cd.joystick_y ) > m_fJoystickDeadzone )
+	if ( fabsf( cd.joystick_x ) > effectiveJoyDeadzone || fabsf( cd.joystick_y ) > effectiveJoyDeadzone )
 		NewState.ulButtonTouched |= vr::ButtonMaskFromId( vr::k_EButton_Axis0 );
 
 	// All pressed buttons are touched

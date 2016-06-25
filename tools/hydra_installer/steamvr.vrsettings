@@ -4,9 +4,9 @@
       "CollisionBoundsStyle" : 0
    },
    "hydra" : {
-      "joystickDeadzone" : 0.08,
-      "renderModel" : "vr_controller_vive_1_5"
-      //"renderModel" : "{hydra}hydra_controller"
+      //"enableIMUEmulationAtStart" : true,             // enable imu emulation at start
+      //"renderModel" : "{hydra}hydra_controller",      // use the included hydra rendermodels
+      // "joystickDeadzone" : 0.08                      // try to increase this value if the joy doesn't return to the center.
    },
    "jsonid" : "vrsettings",
    "keyboard" : {
