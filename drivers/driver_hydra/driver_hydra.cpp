@@ -788,8 +788,17 @@ void CHydraHmdLatest::UpdateControllerState( sixenseControllerData & cd )
 	if ( cd.trigger > 0.8f )
 		NewState.ulButtonPressed |= vr::ButtonMaskFromId( vr::k_EButton_Axis1 );
 	// sixense driver seems to have good deadzone, but add a small one here
-	if ( fabsf( cd.joystick_x ) > effectiveJoyDeadzone || fabsf( cd.joystick_y ) > effectiveJoyDeadzone )
-		NewState.ulButtonTouched |= vr::ButtonMaskFromId( vr::k_EButton_Axis0 );
+	if (fabsf(cd.joystick_x) > effectiveJoyDeadzone || fabsf(cd.joystick_y) > effectiveJoyDeadzone) 
+	{
+		NewState.ulButtonTouched |= vr::ButtonMaskFromId(vr::k_EButton_Axis0);
+		NewState.rAxis[0].x = cd.joystick_x;
+		NewState.rAxis[0].y = cd.joystick_y;
+	}
+	else 
+	{
+		NewState.rAxis[0].x = .0f;
+		NewState.rAxis[0].y = .0f;
+	}
 
 	// All pressed buttons are touched
 	NewState.ulButtonTouched |= NewState.ulButtonPressed;
@@ -802,8 +811,6 @@ void CHydraHmdLatest::UpdateControllerState( sixenseControllerData & cd )
 	SendButtonUpdates( &vr::IServerDriverHost::TrackedDeviceButtonUnpressed, ulChangedPressed & ~NewState.ulButtonPressed );
 	SendButtonUpdates( &vr::IServerDriverHost::TrackedDeviceButtonUntouched, ulChangedTouched & ~NewState.ulButtonTouched );
 
-	NewState.rAxis[0].x = cd.joystick_x;
-	NewState.rAxis[0].y = cd.joystick_y;
 	NewState.rAxis[1].x = cd.trigger;
 	NewState.rAxis[1].y = 0.0f;
 
