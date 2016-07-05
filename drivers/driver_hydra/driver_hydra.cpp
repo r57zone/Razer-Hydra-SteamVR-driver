@@ -751,8 +751,11 @@ void CHydraHmdLatest::UpdateControllerState( sixenseControllerData & cd )
 	// the user the ability to play games that require placing 
 	// the thumb in the center of the touchpad without pressing it.
 	float effectiveJoyDeadzone = m_fJoystickDeadzone;
-	if (m_bEnableHoldThumbpad && (cd.buttons & SIXENSE_BUTTON_3))
+	bool holdingThumbpad = false;
+	if (m_bEnableHoldThumbpad && (cd.buttons & SIXENSE_BUTTON_3)) {
 		effectiveJoyDeadzone = -1.0f;
+		bool holdingThumbpad = true;
+	}
 
 
 
@@ -769,8 +772,9 @@ void CHydraHmdLatest::UpdateControllerState( sixenseControllerData & cd )
 		NewState.ulButtonPressed |= vr::ButtonMaskFromId(k_EButton_Button1);
 	if ( cd.buttons & SIXENSE_BUTTON_2 )
 		NewState.ulButtonPressed |= vr::ButtonMaskFromId(k_EButton_Button2);
-	if ( cd.buttons & SIXENSE_BUTTON_3 )
-		NewState.ulButtonPressed |= vr::ButtonMaskFromId( k_EButton_Button3 );
+	if (!holdingThumbpad)
+		if ( cd.buttons & SIXENSE_BUTTON_3 )
+			NewState.ulButtonPressed |= vr::ButtonMaskFromId(k_EButton_Button3);
 	if ( cd.buttons & SIXENSE_BUTTON_4 )
 		NewState.ulButtonPressed |= vr::ButtonMaskFromId( k_EButton_Button4 );
 	if ( cd.buttons & SIXENSE_BUTTON_BUMPER )
