@@ -380,11 +380,11 @@ CClientDriver_Hydra::~CClientDriver_Hydra()
 {
 }
 
-vr::EVRInitError CClientDriver_Hydra::Init( vr::IDriverLog * pDriverLog, vr::IClientDriverHost * pDriverHost, const char * pchUserDriverConfigDir, const char * pchDriverInstallDir )
+vr::EVRInitError CClientDriver_Hydra::Init(vr::EClientDriverMode eDriverMode, vr::IDriverLog * pDriverLog, vr::IClientDriverHost * pDriverHost, const char * pchUserDriverConfigDir, const char * pchDriverInstallDir )
 {
 	InitDriverLog( pDriverLog );
 	m_pDriverHost = pDriverHost;
-	return vr::VRInitError_None;
+	return vr::VRInitError_Init_LowPowerWatchdogNotSupported;
 }
 
 void CClientDriver_Hydra::Cleanup()

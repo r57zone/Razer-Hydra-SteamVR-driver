@@ -62,7 +62,7 @@ public:
 	virtual ~CClientDriver_Hydra();
 
 	// Inherited via IClientTrackedDeviceProvider
-	virtual vr::EVRInitError Init( vr::IDriverLog * pDriverLog, vr::IClientDriverHost * pDriverHost, const char * pchUserDriverConfigDir, const char * pchDriverInstallDir ) override;
+	virtual vr::EVRInitError Init(vr::EClientDriverMode eDriverMode, vr::IDriverLog * pDriverLog, vr::IClientDriverHost * pDriverHost, const char * pchUserDriverConfigDir, const char * pchDriverInstallDir ) override;
 	virtual void Cleanup() override;
 	virtual bool BIsHmdPresent( const char * pchUserConfigDir ) override;
 	virtual vr::EVRInitError SetDisplayId( const char * pchDisplayId ) override;
