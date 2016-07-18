@@ -970,7 +970,11 @@ void CHydraHmdLatest::UpdateTrackingState( sixenseControllerData & cd )
 				m_Pose.vecAngularVelocity[2] = expFactor_ * angvel_.z() + (1 - expFactor_) * m_LastAngularVelocity.z();
 				//DriverLog("angvel: ad: %f, x: %f, y: %f, z: %f \n", m_ControllerLastRotation.angularDistance(rotation_), angvel_.x(), angvel_.y(), angvel_.z());
 
-				m_LastAngularVelocity = angvel_; // refresh history
+				// refresh history
+				for (int i = 0; i < 3; i++)
+				{
+					m_LastAngularVelocity[i] = m_Pose.vecAngularVelocity[i];
+				}
 			}
 
 		}
@@ -998,8 +1002,11 @@ void CHydraHmdLatest::UpdateTrackingState( sixenseControllerData & cd )
 		// Refresh the history
 		m_ControllerLastUpdateTime = std::chrono::steady_clock::now();
 		m_ControllerLastRotation = rotation_;
-		m_LastVelocity = vel;
-		m_LastAcceleration = acc;
+		for (int i = 0; i < 3; i++)
+		{
+			m_LastVelocity[i] = m_Pose.vecVelocity[i];
+			m_LastAcceleration[i] = m_Pose.vecAcceleration[i];
+		}
 	}
 
 	// Don't show user any controllers until they have hemisphere tracking and
