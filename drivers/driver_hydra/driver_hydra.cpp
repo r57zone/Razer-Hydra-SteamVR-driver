@@ -454,7 +454,7 @@ CHydraHmdLatest::CHydraHmdLatest( vr::IServerDriverHost * pDriverHost, int base,
 	m_strRenderModel.assign(tmp_, sizeof(tmp_));
 
 	// enableIMUEmulation: enable experimental IMU emulation at startup
-	m_bEnableIMUEmulation = settings_->GetBool("hydra", "enableIMUEmulationAtStart", false);
+	m_bEnableIMUEmulation = settings_->GetBool("hydra", "enableIMUEmulationAtStart", true);
 	m_bEnableAngularVelocity = true;
 
 	// joystickDeadzone: set joystick deadzone
