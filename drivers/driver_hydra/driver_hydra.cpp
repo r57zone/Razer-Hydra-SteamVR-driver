@@ -565,7 +565,8 @@ int32_t CHydraHmdLatest::GetInt32TrackedDeviceProperty( vr::ETrackedDeviceProper
 		break;
 
 	case vr::Prop_Axis0Type_Int32:
-		nRetVal = vr::k_eControllerAxis_Joystick;
+		// We are reporting a "trackpad" type axis for better compatibility with Vive games
+		nRetVal = vr::k_eControllerAxis_TrackPad;
 		error = vr::TrackedProp_Success;
 		break;
 
