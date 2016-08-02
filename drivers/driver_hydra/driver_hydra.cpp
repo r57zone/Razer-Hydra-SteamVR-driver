@@ -450,18 +450,18 @@ CHydraHmdLatest::CHydraHmdLatest( vr::IServerDriverHost * pDriverHost, int base,
 	char tmp_[32];
 
 	// renderModel: assign a rendermodel
-	settings_->GetString("hydra", "renderModel", tmp_, sizeof(tmp_), "vr_controller_vive_1_5");
+	settings_->GetString("hydra", "rendermodel", tmp_, sizeof(tmp_), "vr_controller_vive_1_5");
 	m_strRenderModel.assign(tmp_, sizeof(tmp_));
 
-	// enableIMUEmulation: enable experimental IMU emulation at startup
-	m_bEnableIMUEmulation = settings_->GetBool("hydra", "enableIMUEmulationAtStart", true);
+	// enable IMU emulation
+	m_bEnableIMUEmulation = settings_->GetBool("hydra", "enableimu", true);
 	m_bEnableAngularVelocity = true;
 
-	// joystickDeadzone: set joystick deadzone
-	m_fJoystickDeadzone = settings_->GetFloat("hydra", "joystickDeadzone", 0.08f);
+	// set joystick deadzone
+	m_fJoystickDeadzone = settings_->GetFloat("hydra", "joystickdeadzone", 0.08f);
 
-	// enableDeveloperMode: enable developer features
-	m_bEnableDeveloperMode = settings_->GetBool("hydra", "enableDeveloperMode", false);
+	// enable developer features
+	m_bEnableDeveloperMode = settings_->GetBool("hydra", "enabledevelopermode", false);
 
 	// "Hold Thumbpad" mode (not user configurable)
 	m_bEnableHoldThumbpad = true;
@@ -923,7 +923,7 @@ void CHydraHmdLatest::UpdateTrackingState( sixenseControllerData & cd )
 		m_Pose.vecAngularVelocity[1] = 0.0;
 		m_Pose.vecAngularVelocity[2] = 0.0;
 
-	} else { // Experimental IMU Emulation
+	} else { // IMU Emulation
 
 		int updatetime_ = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - m_ControllerLastUpdateTime).count();
 
@@ -937,7 +937,7 @@ void CHydraHmdLatest::UpdateTrackingState( sixenseControllerData & cd )
 
 		if (m_bHasUpdateHistory) {
 
-			float expFactor_ = .1f; // exponential smoothing factor
+			float expFactor_ = .1f; // smoothing factor
 
 			// add sixense_utils velocity with smoothing
 			m_Pose.vecVelocity[0] = expFactor_ * vel[0] + (1 - expFactor_) * m_LastVelocity[0];

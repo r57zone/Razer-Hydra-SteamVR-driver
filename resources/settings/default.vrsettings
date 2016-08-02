@@ -1,0 +1,12 @@
+{
+	"driver_lighthouse" : {
+		"disableimu" : false,
+		"usedisambiguation" : "tdm",
+		"disambiguationdebug" : 0,
+		"primarybasestation" : 0,
+		"lighthousename" : "",
+		"maxincidenceangledegrees" : 60.0,
+		"uselighthousedirect" : true,
+		"dbhistory" : false
+	}
+}
