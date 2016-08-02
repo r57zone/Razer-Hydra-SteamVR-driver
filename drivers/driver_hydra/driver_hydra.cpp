@@ -733,32 +733,33 @@ void CHydraHmdLatest::UpdateControllerState( sixenseControllerData & cd )
 	 * before the driver state is updated.
 	 */
 
-	// Button 1+2: toggles the IMU emulation
-	if ((cd.buttons & SIXENSE_BUTTON_1) && (cd.buttons & SIXENSE_BUTTON_2)) {
-		if (!(m_ControllerState.ulButtonPressed & vr::ButtonMaskFromId(k_EButton_Button1)) || !(m_ControllerState.ulButtonPressed & vr::ButtonMaskFromId(k_EButton_Button2))) {
-			m_bEnableIMUEmulation = !m_bEnableIMUEmulation;
-			m_bHasUpdateHistory = false;
+	 // Developer mode
+	if (m_bEnableDeveloperMode) {
+		if (cd.buttons & SIXENSE_BUTTON_2) {
+			// Button 1+2 toggles the IMU emulation
+			if (cd.buttons & SIXENSE_BUTTON_1) {
+				if (!(m_ControllerState.ulButtonPressed & vr::ButtonMaskFromId(k_EButton_Button1)) || !(m_ControllerState.ulButtonPressed & vr::ButtonMaskFromId(k_EButton_Button2))) {
+					m_bEnableIMUEmulation = !m_bEnableIMUEmulation;
+					m_bHasUpdateHistory = false;
+				}
+			}
+			// Button 2 toggles angular velocity on/off
+			else {
+				if (!(m_ControllerState.ulButtonPressed & vr::ButtonMaskFromId(k_EButton_Button2))) {
+					m_bEnableAngularVelocity = !m_bEnableAngularVelocity;
+				}
+			}
 		}
 	}
-	// Button 2: toggles angular velocity on/off (only in developer mode)
-	else if (cd.buttons & SIXENSE_BUTTON_2) {
-		if (m_bEnableDeveloperMode && !(m_ControllerState.ulButtonPressed & vr::ButtonMaskFromId(k_EButton_Button2)))
-			m_bEnableAngularVelocity = !m_bEnableAngularVelocity;
-	}
 
-	// Button 3:
-	// Activates the "Hold Thumbpad" mode, which removes the 
-	// joystick deadzone while the button is pressed. This gives 
-	// the user the ability to play games that require placing 
-	// the thumb in the center of the touchpad without pressing it.
+	// "Hold Thumbpad" mode removes the joystick deadzone while Button 3 is pressed.
+	// This is needed for full compatibility with the Vive's trackpad.
 	float effectiveJoyDeadzone = m_fJoystickDeadzone;
 	bool holdingThumbpad = false;
 	if (m_bEnableHoldThumbpad && (cd.buttons & SIXENSE_BUTTON_3)) {
 		effectiveJoyDeadzone = -1.0f;
 		bool holdingThumbpad = true;
 	}
-
-
 
 	/**
 	 * Update the driver state
