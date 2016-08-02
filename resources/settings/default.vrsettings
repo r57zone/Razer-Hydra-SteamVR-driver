@@ -1,12 +1,9 @@
 {
-	"driver_lighthouse" : {
-		"disableimu" : false,
-		"usedisambiguation" : "tdm",
-		"disambiguationdebug" : 0,
-		"primarybasestation" : 0,
-		"lighthousename" : "",
-		"maxincidenceangledegrees" : 60.0,
-		"uselighthousedirect" : true,
-		"dbhistory" : false
-	}
+    "hydra" : {
+        "enableimu" : true,
+        "enabledevelopermode" : false,
+        "rendermodel" : "vr_controller_vive_1_5",
+        //"rendermodel" : "{hydra}hydra_controller",
+        "joystickdeadzone" : 0.08
+    }
 }
