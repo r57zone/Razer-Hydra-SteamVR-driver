@@ -2,7 +2,7 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros">
-    <SteamVRRuntimeDir>C:\Program Files (x86)\steam\steamapps\common\SteamVR</SteamVRRuntimeDir>
+    <SteamVRRuntimeDir>e:\SteamLibrary\steamapps\common\SteamVR</SteamVRRuntimeDir>
     <OpenVRDir>c:\Users\beta\Source\Repos\openvr</OpenVRDir>
     <SixenseSDKDir>d:\_repos\SixenseSDK_102215</SixenseSDKDir>
     <InstallDir>D:\hydra</InstallDir>

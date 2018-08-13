@@ -100,10 +100,10 @@
       <AdditionalDependencies>openvr_api.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>mkdir "$(InstallDir)\bin\$(Platform)"
+      <Command>mkdir "$(InstallDir)\hydra\bin\$(Platform)"
 copy "$(OpenVRDir)\bin\$(Platform)\openvr_api.dll" "$(TargetDir)"
-copy "$(OutDir)$(TargetName)$(TargetExt)" "$(InstallDir)\bin\$(Platform)"
-copy "$(OpenVRDir)\bin\$(Platform)\openvr_api.dll" "$(InstallDir)\bin\$(Platform)"
+copy "$(OutDir)$(TargetName)$(TargetExt)" "$(InstallDir)\hydra\bin\$(Platform)"
+copy "$(OpenVRDir)\bin\$(Platform)\openvr_api.dll" "$(InstallDir)\hydra\bin\$(Platform)"
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -122,10 +122,10 @@ copy "$(OpenVRDir)\bin\$(Platform)\openvr_api.dll" "$(InstallDir)\bin\$(Platform
       <AdditionalLibraryDirectories>$(OpenVRDir)\lib\$(Platform)\;C:\Program Files (x86)\Steam\SteamApps\common\Sixense SDK\SixenseSDK\lib\$(Platform)\$(Configuration)_dll;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>mkdir "$(InstallDir)\bin\$(Platform)"
+      <Command>mkdir "$(InstallDir)\hydra\bin\$(Platform)"
 copy "$(OpenVRDir)\bin\$(Platform)\openvr_api.dll" "$(TargetDir)"
-copy "$(OutDir)$(TargetName)$(TargetExt)" "$(InstallDir)\bin\$(Platform)"
-copy "$(OpenVRDir)\bin\$(Platform)\openvr_api.dll" "$(InstallDir)\bin\$(Platform)"
+copy "$(OutDir)$(TargetName)$(TargetExt)" "$(InstallDir)\hydra\bin\$(Platform)"
+copy "$(OpenVRDir)\bin\$(Platform)\openvr_api.dll" "$(InstallDir)\hydra\bin\$(Platform)"
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -148,10 +148,10 @@ copy "$(OpenVRDir)\bin\$(Platform)\openvr_api.dll" "$(InstallDir)\bin\$(Platform
       <AdditionalDependencies>openvr_api.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>mkdir "$(InstallDir)\bin\$(Platform)"
+      <Command>mkdir "$(InstallDir)\hydra\bin\$(Platform)"
 copy "$(OpenVRDir)\bin\$(Platform)\openvr_api.dll" "$(TargetDir)"
-copy "$(OutDir)$(TargetName)$(TargetExt)" "$(InstallDir)\bin\$(Platform)"
-copy "$(OpenVRDir)\bin\$(Platform)\openvr_api.dll" "$(InstallDir)\bin\$(Platform)"
+copy "$(OutDir)$(TargetName)$(TargetExt)" "$(InstallDir)\hydra\bin\$(Platform)"
+copy "$(OpenVRDir)\bin\$(Platform)\openvr_api.dll" "$(InstallDir)\hydra\bin\$(Platform)"
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -174,10 +174,10 @@ copy "$(OpenVRDir)\bin\$(Platform)\openvr_api.dll" "$(InstallDir)\bin\$(Platform
       <AdditionalLibraryDirectories>$(OpenVRDir)\lib\$(Platform)\;C:\Program Files (x86)\Steam\SteamApps\common\Sixense SDK\SixenseSDK\lib\$(Platform)\$(Configuration)_dll;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>mkdir "$(InstallDir)\bin\$(Platform)"
+      <Command>mkdir "$(InstallDir)\hydra\bin\$(Platform)"
 copy "$(OpenVRDir)\bin\$(Platform)\openvr_api.dll" "$(TargetDir)"
-copy "$(OutDir)$(TargetName)$(TargetExt)" "$(InstallDir)\bin\$(Platform)"
-copy "$(OpenVRDir)\bin\$(Platform)\openvr_api.dll" "$(InstallDir)\bin\$(Platform)"
+copy "$(OutDir)$(TargetName)$(TargetExt)" "$(InstallDir)\hydra\bin\$(Platform)"
+copy "$(OpenVRDir)\bin\$(Platform)\openvr_api.dll" "$(InstallDir)\hydra\bin\$(Platform)"
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
