@@ -1,28 +1,29 @@
 ﻿//============ Copyright (c) Valve Corporation, All rights reserved. ============
 
+#define WIN32_LEAN_AND_MEAN
+
 #include <openvr_driver.h>
-
 #include "driverlog.h"
-
-#include <string>
-#include <mutex>
-#include <atomic>
 #include <vector>
 #include <thread>
 #include <chrono>
-
-// sixense sdk
+#include <string>
+#include <mutex>
+#include <atomic>
+#include <sstream>
+#include <SDKDDKVer.h>
+#include <stdlib.h>
+#include <malloc.h>
+#include <memory.h>
+#include <tchar.h>
 #include <sixense.h>
 #include <sixense_math.hpp>
 #include <sixense_utils/derivatives.hpp>
 
 #ifdef _WIN32
+#include <windows.h>
 #include <mmsystem.h> // for timeBeginPeriod()
 #pragma comment(lib, "winmm.lib")
-#endif
-
-#if defined( _WINDOWS )
-#include <windows.h>
 #endif
 
 using namespace vr;
@@ -120,7 +121,6 @@ public:
         m_ulPropertyContainer = vr::k_ulInvalidPropertyContainer;
 
         m_sSerialNumber = "CTRL_1234";
-
         m_sModelNumber = "MyController";
     }
 
