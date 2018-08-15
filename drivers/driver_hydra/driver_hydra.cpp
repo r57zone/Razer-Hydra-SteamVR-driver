@@ -55,6 +55,11 @@ static const char * const k_pch_Hydra_EnableIMU_Bool = "enableimu";
 static const char * const k_pch_Hydra_EnableDeveloperMode_Bool = "enabledevelopermode";
 static const char * const k_pch_Hydra_JoystickDeadzone_Float = "joystickdeadzone";
 
+static void GenerateSerialNumber(char *p, int psize, int base, int controller)
+{
+    _snprintf(p, psize, "hydra%d_controller%d", base, controller);
+}
+
 //-----------------------------------------------------------------------------
 // Purpose: Watchdog
 //-----------------------------------------------------------------------------
@@ -126,13 +131,182 @@ void CWatchdogDriver_Hydra::Cleanup()
 class CHydraControllerDriver : public vr::ITrackedDeviceServerDriver
 {
 public:
-    CHydraControllerDriver()
+    bool IsActivated() const
+    {
+        return m_unObjectId != vr::k_unTrackedDeviceIndexInvalid;
+    }
+
+    bool HasControllerId(int nBase, int nId)
+    {
+        return nBase == m_nBase && nId == m_nId;
+    }
+
+    /** Process sixenseControllerData.  Return true if it's new to help caller manage sleep durations */
+    bool Update(sixenseControllerData & cd)
+    {
+        if (m_ucPoseSequenceNumber == cd.sequence_number || !IsActivated())
+            return false;
+        m_ucPoseSequenceNumber = cd.sequence_number;
+
+        //UpdateTrackingState(cd); // TODO
+
+        // Block all buttons until initial press confirms hemisphere
+        if (WaitingForHemisphereTracking(cd))
+            return true;
+
+        DelaySystemButtonForChording(cd);
+
+        //UpdateControllerState(cd); // TODO
+
+        return true;
+    }
+
+    bool IsHoldingSystemButton() const
+    {
+        return m_eSystemButtonState == k_eWaiting;
+    }
+
+    void ConsumeSystemButtonPress()
+    {
+        if (m_eSystemButtonState == k_eWaiting)
+        {
+            m_eSystemButtonState = k_eBlocked;
+        }
+    }
+
+    void DelaySystemButtonForChording(sixenseControllerData & cd)
+    {
+        // Delay sending system button to vrserver while we see if it is being
+        // chorded with the other system button to reset the coordinate system
+        if (cd.buttons & SIXENSE_BUTTON_START)
+        {
+            switch (m_eSystemButtonState)
+            {
+            case k_eIdle:
+                m_eSystemButtonState = k_eWaiting;
+                m_SystemButtonDelay = std::chrono::steady_clock::now() + k_SystemButtonChordingDelay;
+                cd.buttons &= ~SIXENSE_BUTTON_START;
+                break;
+
+            case k_eWaiting:
+                if (std::chrono::steady_clock::now() >= m_SystemButtonDelay)
+                {
+                    m_eSystemButtonState = k_eSent;
+                    // leave button state set, will reach vrserver
+                }
+                else
+                {
+                    cd.buttons &= ~SIXENSE_BUTTON_START;
+                }
+                break;
+
+            case k_eSent:
+                // still held down, nothing to do
+                break;
+
+            case k_ePulsed:
+                // user re-pressed within 1 frame, just ignore lift
+                m_eSystemButtonState = k_eSent;
+                break;
+
+            case k_eBlocked:
+                // was consumed by chording gesture -- never send until released
+                cd.buttons &= ~SIXENSE_BUTTON_START;
+                break;
+            }
+        }
+        else
+        {
+            switch (m_eSystemButtonState)
+            {
+            case k_eIdle:
+            case k_eSent:
+            case k_eBlocked:
+                m_eSystemButtonState = k_eIdle;
+                break;
+
+            case k_eWaiting:
+                // user pressed and released the button within the timeout, so
+                // send a quick pulse to the application
+                m_eSystemButtonState = k_ePulsed;
+                m_SystemButtonDelay = std::chrono::steady_clock::now() + k_SystemButtonPulsingDuration;
+                cd.buttons |= SIXENSE_BUTTON_START;
+                break;
+
+            case k_ePulsed:
+                // stretch fake pulse so client sees it
+                if (std::chrono::steady_clock::now() >= m_SystemButtonDelay)
+                {
+                    m_eSystemButtonState = k_eIdle;
+                }
+                cd.buttons |= SIXENSE_BUTTON_START;
+                break;
+            }
+        }
+    }
+
+    // Initially block all button presses, stealing the first one to mean
+    // that the controller is pointing at the base and we should tell the Sixense SDK
+    bool WaitingForHemisphereTracking(sixenseControllerData & cd)
+    {
+        switch (m_eHemisphereTrackingState)
+        {
+        case k_eHemisphereTrackingDisabled:
+            if (cd.buttons || cd.trigger > 0.8f)
+            {
+                // First button press
+                m_eHemisphereTrackingState = k_eHemisphereTrackingButtonDown;
+            }
+            return true;
+
+        case k_eHemisphereTrackingButtonDown:
+            if (!cd.buttons && cd.trigger < 0.1f)
+            {
+                // Buttons released (so they won't leak into application), go!
+                sixenseAutoEnableHemisphereTracking(m_nId);
+                m_eHemisphereTrackingState = k_eHemisphereTrackingEnabled;
+            }
+            return true;
+
+        case k_eHemisphereTrackingEnabled:
+        default:
+            return false;
+        }
+    }
+
+    // User initiated manual alignment of the coordinate system of driver_hydra with the HMD:
+    //
+    // The user has put two controllers on either side of her head, near the shoulders.  We
+    // assume that the HMD is roughly in between them (so the exact distance apart doesn't
+    // matter as long as the pose is symmetrical) and we align the HMD's coordinate system
+    // using the line between the controllers (again, exact position is not important, only
+    // symmetry).
+    static void RealignCoordinates(CHydraControllerDriver * pHydraA, CHydraControllerDriver * pHydraB)
+    {
+        if (pHydraA->m_unObjectId == vr::k_unTrackedDeviceIndexInvalid)
+            return;
+
+        pHydraA->m_pAlignmentPartner = pHydraB;
+        pHydraB->m_pAlignmentPartner = pHydraA;
+
+        // Ask hydra_monitor to tell us HMD pose
+        static vr::VREvent_Data_t nodata = { 0 };
+        vr::VRServerDriverHost()->VendorSpecificEvent(pHydraA->m_unObjectId,
+            (vr::EVREventType) (vr::VREvent_VendorSpecific_Reserved_Start + 0), nodata,
+            -std::chrono::duration_cast<std::chrono::seconds>(k_SystemButtonChordingDelay).count());
+    }
+
+
+    CHydraControllerDriver(int base, int n)
     {
         m_unObjectId = vr::k_unTrackedDeviceIndexInvalid;
         m_ulPropertyContainer = vr::k_ulInvalidPropertyContainer;
 
-        m_sSerialNumber = "CTRL_1234";
-        m_sModelNumber = "MyController";
+        char buf[256];
+        GenerateSerialNumber(buf, sizeof(buf), base, n);
+        m_sSerialNumber = buf;
+
+        m_sModelNumber = "Razer Hydra";
     }
 
     virtual ~CHydraControllerDriver()
@@ -146,6 +320,7 @@ public:
         m_ulPropertyContainer = vr::VRProperties()->TrackedDeviceToPropertyContainer(m_unObjectId);
 
         vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, Prop_ModelNumber_String, m_sModelNumber.c_str());
+
         vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, Prop_RenderModelName_String, m_sModelNumber.c_str());
 
         // return a constant that's not 0 (invalid) or 1 (reserved for Oculus)
@@ -237,7 +412,6 @@ public:
             if (vrEvent.data.hapticVibration.componentHandle == m_compHaptic)
             {
                 // This is where you would send a signal to your hardware to trigger actual haptic feedback
-                DriverLog("BUZZ!\n");
             }
         }
         break;
@@ -250,7 +424,7 @@ public:
 private:
     vr::TrackedDeviceIndex_t m_unObjectId;
     vr::PropertyContainerHandle_t m_ulPropertyContainer;
-
+    vr::ETrackedControllerRole m_eControllerRole;
     vr::VRInputComponentHandle_t m_compA;
     vr::VRInputComponentHandle_t m_compB;
     vr::VRInputComponentHandle_t m_compC;
@@ -259,8 +433,37 @@ private:
     std::string m_sSerialNumber;
     std::string m_sModelNumber;
 
+    // Which Hydra controller
+    int m_nBase;
+    int m_nId;
+
+    // Used to deduplicate state data from the sixense driver
+    uint8_t m_ucPoseSequenceNumber;
+
+    // Ancillary tracking state
+    sixenseMath::Vector3 m_WorldFromDriverTranslation;
+    sixenseMath::Quat m_WorldFromDriverRotation;
+    sixenseUtils::Derivatives m_Deriv;
+    enum { k_eHemisphereTrackingDisabled, k_eHemisphereTrackingButtonDown, k_eHemisphereTrackingEnabled } m_eHemisphereTrackingState;
+    bool m_bCalibrated;
+
+    // Other controller with from the last realignment
+    CHydraControllerDriver *m_pAlignmentPartner;
+
+    // Timeout for system button chording
+    std::chrono::steady_clock::time_point m_SystemButtonDelay;
+    enum { k_eIdle, k_eWaiting, k_eSent, k_ePulsed, k_eBlocked } m_eSystemButtonState;
+
+    static const float k_fScaleSixenseToMeters;
+    static const std::chrono::milliseconds k_SystemButtonChordingDelay;
+    static const std::chrono::milliseconds k_SystemButtonPulsingDuration;
 
 };
+
+const std::chrono::milliseconds CHydraControllerDriver::k_SystemButtonChordingDelay(150);
+const std::chrono::milliseconds CHydraControllerDriver::k_SystemButtonPulsingDuration(100);
+const float CHydraControllerDriver::k_fScaleSixenseToMeters = 0.001;  // sixense driver in mm
+
 
 //-----------------------------------------------------------------------------
 // Purpose: IServerTrackedDeviceProvider
@@ -268,6 +471,8 @@ private:
 class CServerDriver_Hydra : public IServerTrackedDeviceProvider
 {
 public:
+    CServerDriver_Hydra();
+    virtual ~CServerDriver_Hydra();
     virtual EVRInitError Init(vr::IVRDriverContext *pDriverContext);
     virtual void Cleanup();
     virtual const char * const *GetInterfaceVersions() { return vr::k_InterfaceVersions; }
@@ -277,44 +482,256 @@ public:
     virtual void LeaveStandby() {}
 
 private:
-    CHydraControllerDriver *m_pController = nullptr;
+    CHydraControllerDriver *m_pControllerA = nullptr;
+    CHydraControllerDriver *m_pControllerB = nullptr;
+    std::atomic<bool> m_bStopRequested;
+    bool m_bLaunchedHydraMonitor;
+    std::thread *m_Thread;
+    std::recursive_mutex m_Mutex;
+    typedef std::lock_guard<std::recursive_mutex> scope_lock;
+    std::vector< CHydraControllerDriver * > m_vecControllers;
+    static void ThreadEntry(CServerDriver_Hydra *pDriver);
+    void ThreadFunc();
+    void ScanForNewControllers(bool bNotifyServer);
+    void CheckForChordedSystemButtons();
+    virtual uint32_t GetTrackedDeviceCount();
+    virtual vr::ITrackedDeviceServerDriver * FindTrackedDeviceDriver(const char * pchId);
 };
 
 CServerDriver_Hydra g_serverDriverHydra;
 
+CServerDriver_Hydra::CServerDriver_Hydra():
+    m_Thread(NULL), // initialize m_Thread
+    m_bStopRequested(false),
+    m_bLaunchedHydraMonitor(false)
+{
+}
+
+CServerDriver_Hydra::~CServerDriver_Hydra()
+{
+    // 10/10/2015 benj:  vrserver is exiting without calling Cleanup() to balance Init()
+    // causing std::thread to call std::terminate
+    Cleanup();
+}
 
 EVRInitError CServerDriver_Hydra::Init(vr::IVRDriverContext *pDriverContext)
 {
     VR_INIT_SERVER_DRIVER_CONTEXT(pDriverContext);
     InitDriverLog(vr::VRDriverLog());
 
-    m_pController = new CHydraControllerDriver();
-    vr::VRServerDriverHost()->TrackedDeviceAdded(m_pController->GetSerialNumber().c_str(), vr::TrackedDeviceClass_Controller, m_pController);
+    if (sixenseInit() != SIXENSE_SUCCESS)
+        return vr::VRInitError_Driver_Failed;
+
+    // Will not immediately detect controllers at this point.  Sixense driver must be initializing
+    // in its own thread...  It's okay to dynamically detect devices later, but if controllers are
+    // the only devices (e.g. requireHmd=false) we must have GetTrackedDeviceCount() != 0 before returning.
+    for (int i = 0; i < 20; ++i)
+    {
+        ScanForNewControllers(false);
+        if (GetTrackedDeviceCount())
+            break;
+        Sleep(100);
+    }
+
+    m_Thread = new std::thread(ThreadEntry, this);   // use new operator now
+
+    //m_pControllerA = new CHydraControllerDriver(0);
+    //vr::VRServerDriverHost()->TrackedDeviceAdded(m_pControllerA->GetSerialNumber().c_str(), vr::TrackedDeviceClass_Controller, m_pControllerA);
+    //m_pControllerB = new CHydraControllerDriver(1);
+    //vr::VRServerDriverHost()->TrackedDeviceAdded(m_pControllerB->GetSerialNumber().c_str(), vr::TrackedDeviceClass_Controller, m_pControllerB);
 
     return VRInitError_None;
 }
 
+void CServerDriver_Hydra::ThreadEntry(CServerDriver_Hydra * pDriver)
+{
+    pDriver->ThreadFunc();
+}
+
+void CServerDriver_Hydra::ThreadFunc()
+{
+    // We know the sixense SDK thread is running at "60 FPS", but we don't know when
+    // those frames are.  To minimize latency, we sleep for slightly less than the
+    // target rate, and detect when the frame has not advanced to wait a bit longer.
+    auto longInterval = std::chrono::milliseconds(16);
+    auto retryInterval = std::chrono::milliseconds(2);
+    auto scanInterval = std::chrono::seconds(1);
+    auto pollDeadline = std::chrono::steady_clock::now();
+    auto scanDeadline = std::chrono::steady_clock::now() + scanInterval;
+
+#ifdef _WIN32
+    // Request at least 2ms timing granularity for the life of this process
+    timeBeginPeriod(2);
+#endif
+
+    while (!m_bStopRequested)
+    {
+        // Check for new controllers here because sixense API is modal
+        // (e.g. sixenseSetActiveBase()) so it can't happen in parallel with pose updates
+        if (pollDeadline > scanDeadline)
+        {
+            ScanForNewControllers(true);
+            scanDeadline += scanInterval;
+        }
+
+        bool bAnyActivated = false;
+        bool bAllUpdated = true;
+        for (int base = 0; base < sixenseGetMaxBases(); ++base)
+        {
+            if (!sixenseIsBaseConnected(base))
+                continue;
+
+            sixenseAllControllerData acd;
+
+            sixenseSetActiveBase(base);
+            if (sixenseGetAllNewestData(&acd) != SIXENSE_SUCCESS)
+                continue;
+            for (int id = 0; id < sixenseGetMaxControllers(); ++id)
+            {
+                for (auto it = m_vecControllers.begin(); it != m_vecControllers.end(); ++it)
+                {
+                    CHydraControllerDriver *pHydra = *it;
+                    if (pHydra->IsActivated() && pHydra->HasControllerId(base, id))
+                    {
+                        bAnyActivated = true;
+                        // Returns true if this is new data (so we can sleep for long interval)
+                        if (!pHydra->Update(acd.controllers[id]))
+                        {
+                            bAllUpdated = false;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        CheckForChordedSystemButtons();
+
+        // If everyone just got new data, we can wait about 1/60s, else try again soon
+        pollDeadline += !bAnyActivated ? scanInterval :
+            bAllUpdated ? longInterval : retryInterval;
+        std::this_thread::sleep_until(pollDeadline);
+    }
+
+#ifdef _WIN32
+    timeEndPeriod(2);
+#endif
+}
+
+void CServerDriver_Hydra::CheckForChordedSystemButtons()
+{
+    std::vector<CHydraControllerDriver *> vecHeldSystemButtons;
+
+    for (auto it = m_vecControllers.begin(); it != m_vecControllers.end(); ++it)
+    {
+        CHydraControllerDriver *pHydra = *it;
+
+        if (pHydra->IsHoldingSystemButton())
+        {
+            vecHeldSystemButtons.push_back(pHydra);
+        }
+    }
+    // If two or more system buttons are pressed together, treat them as a chord
+    // requesting a realignment of the coordinate system
+    if (vecHeldSystemButtons.size() >= 2)
+    {
+        if (vecHeldSystemButtons.size() == 2)
+        {
+            CHydraControllerDriver::RealignCoordinates(vecHeldSystemButtons[0], vecHeldSystemButtons[1]);
+        }
+
+        for (auto it = vecHeldSystemButtons.begin(); it != vecHeldSystemButtons.end(); ++it)
+        {
+            (*it)->ConsumeSystemButtonPress();
+        }
+    }
+}
+
+
+uint32_t CServerDriver_Hydra::GetTrackedDeviceCount()
+{
+    scope_lock lock(m_Mutex);
+
+    return m_vecControllers.size();
+}
+
+vr::ITrackedDeviceServerDriver * CServerDriver_Hydra::FindTrackedDeviceDriver(const char * pchId)
+{
+    scope_lock lock(m_Mutex);
+
+    for (auto it = m_vecControllers.begin(); it != m_vecControllers.end(); ++it)
+    {
+        if (0 == strcmp((*it)->GetSerialNumber().c_str(), pchId))
+        {
+            return *it;
+        }
+    }
+    return nullptr;
+}
+
+void CServerDriver_Hydra::ScanForNewControllers(bool bNotifyServer)
+{
+    for (int base = 0; base < sixenseGetMaxBases(); ++base)
+    {
+        if (sixenseIsBaseConnected(base))
+        {
+            sixenseSetActiveBase(base);
+            for (int i = 0; i < sixenseGetMaxControllers(); ++i)
+            {
+                if (sixenseIsControllerEnabled(i))
+                {
+                    char buf[256];
+                    GenerateSerialNumber(buf, sizeof(buf), base, i);
+                    scope_lock lock(m_Mutex);
+                    if (!FindTrackedDeviceDriver(buf))
+                    {
+                        DriverLog("added new device %s\n", buf);
+                        m_vecControllers.push_back(new CHydraControllerDriver(base, i));
+                        if (bNotifyServer)
+                        {
+                            vr::VRServerDriverHost()->TrackedDeviceAdded(m_vecControllers.back()->GetSerialNumber().c_str(), vr::TrackedDeviceClass_Controller, m_vecControllers.back());
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
 void CServerDriver_Hydra::Cleanup()
 {
     CleanupDriverLog();
-    delete m_pController;
-    m_pController = NULL;
+
+    if (m_Thread && m_Thread->joinable())  // test for NULL m_Thread
+    {
+        m_bStopRequested = true;
+        m_Thread->join();
+        m_Thread = NULL;  // force to NULL after thread join()
+        sixenseExit();
+    }
+
+    for (auto it = m_vecControllers.begin(); it != m_vecControllers.end(); ++it)
+    {
+        delete *it;
+        *it = NULL;
+    }
 }
 
 
 void CServerDriver_Hydra::RunFrame()
 {
-    if (m_pController)
+    for (auto it = m_vecControllers.begin(); it != m_vecControllers.end(); ++it)
     {
-        m_pController->RunFrame();
+        (*it)->RunFrame();
     }
 
     vr::VREvent_t vrEvent;
     while (vr::VRServerDriverHost()->PollNextEvent(&vrEvent, sizeof(vrEvent)))
     {
-        if (m_pController)
+        for (auto it = m_vecControllers.begin(); it != m_vecControllers.end(); ++it)
         {
-            m_pController->ProcessEvent(vrEvent);
+            (*it)->ProcessEvent(vrEvent);
         }
     }
 }
