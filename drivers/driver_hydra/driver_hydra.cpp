@@ -38,6 +38,16 @@ using namespace vr;
 #error "Unsupported Platform."
 #endif
 
+inline HmdQuaternion_t HmdQuaternion_Init(double w, double x, double y, double z)
+{
+    HmdQuaternion_t quat;
+    quat.w = w;
+    quat.x = x;
+    quat.y = y;
+    quat.z = z;
+    return quat;
+}
+
 // keys for use with the settings API
 static const char * const k_pch_Hydra_Section = "hydra";
 static const char * const k_pch_Hydra_RenderModel_String = "rendermodel";
@@ -48,7 +58,7 @@ static const char * const k_pch_Hydra_JoystickDeadzone_Float = "joystickdeadzone
 //-----------------------------------------------------------------------------
 // Purpose: Watchdog
 //-----------------------------------------------------------------------------
-
+/*
 class CWatchdogDriver_Hydra : public IVRWatchdogProvider
 {
 public:
@@ -108,6 +118,7 @@ void CWatchdogDriver_Hydra::Cleanup()
 
     CleanupDriverLog();
 }
+*/
 
 //-----------------------------------------------------------------------------
 // Purpose: Controller Driver
@@ -197,8 +208,8 @@ public:
         pose.result = TrackingResult_Calibrating_OutOfRange;
         pose.deviceIsConnected = true;
 
-        //pose.qWorldFromDriverRotation = HmdQuaternion_Init(1, 0, 0, 0);
-        //pose.qDriverFromHeadRotation = HmdQuaternion_Init(1, 0, 0, 0);
+        pose.qWorldFromDriverRotation = HmdQuaternion_Init(1, 0, 0, 0);
+        pose.qDriverFromHeadRotation = HmdQuaternion_Init(1, 0, 0, 0);
 
         return pose;
     }
@@ -206,7 +217,7 @@ public:
 
     void RunFrame()
     {
-#if defined( _WINDOWS )
+#if defined( _WIN32 )
         // Your driver would read whatever hardware state is associated with its input components and pass that
         // in to UpdateBooleanComponent. This could happen in RunFrame or on a thread of your own that's reading USB
         // state. There's no need to update input state unless it changes, but it doesn't do any harm to do so.
@@ -252,7 +263,7 @@ private:
 };
 
 //-----------------------------------------------------------------------------
-// Purpose:
+// Purpose: IServerTrackedDeviceProvider
 //-----------------------------------------------------------------------------
 class CServerDriver_Hydra : public IServerTrackedDeviceProvider
 {
@@ -309,7 +320,7 @@ void CServerDriver_Hydra::RunFrame()
 }
 
 //-----------------------------------------------------------------------------
-// Purpose:
+// Purpose: HmdDriverFactory
 //-----------------------------------------------------------------------------
 HMD_DLL_EXPORT void *HmdDriverFactory(const char *pInterfaceName, int *pReturnCode)
 {
@@ -317,10 +328,14 @@ HMD_DLL_EXPORT void *HmdDriverFactory(const char *pInterfaceName, int *pReturnCo
     {
         return &g_serverDriverHydra;
     }
+
+    // watchdog causes problems with steamvr (endless startup loop), so it's disabled for now
+    /*
     if (0 == strcmp(IVRWatchdogProvider_Version, pInterfaceName))
     {
         return &g_watchdogDriverHydra;
     }
+    */
 
     if (pReturnCode)
         *pReturnCode = VRInitError_Init_InterfaceNotFound;
