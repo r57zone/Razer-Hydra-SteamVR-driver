@@ -168,220 +168,11 @@ public:
 
         DelaySystemButtonForChording(cd);
 
-        //UpdateControllerState(cd); // TODO
+        UpdateControllerState(cd);
 
         return true;
     }
 
-    void UpdateTrackingState(sixenseControllerData & cd)
-    {
-        using namespace sixenseMath;
-
-        // This is very hard to know with this driver, but CServerDriver_Hydra::ThreadFunc
-        // tries to reduce latency as much as possible.  There is filtering in the Sixense SDK,
-        // though, which causes additional unknown latency.  This time is used to know how much
-        // extrapolation (via velocity and angular velocity) should be done when predicting poses.
-        m_Pose.poseTimeOffset = -0.016f;
-
-        // The "driver" coordinate system is the one that vecPosition is in.  This is whatever
-        // coordinates the driver naturally produces for position and orientation.  The "world"
-        // coordinate system is the one that is presented to vrserver.  This should include
-        // fixing any tilt to the world (caused by a tilted camera, for example) and can include
-        // any other useful transformation for the driver (e.g. the driver is tracking from a
-        // secondary camera, but uses this transform to move this object into the primary camera
-        // coordinate system to be consistent with other objects).
-        //
-        // This transform is multiplied on the left of the predicted "driver" pose.  That becomes
-        // the vr::TrackingUniverseRawAndUncalibrated origin, which is then further offset for
-        // floor height and tracking space center by the chaperone system to produce both the
-        // vr::TrackingUniverseSeated and vr::TrackingUniverseStanding spaces.
-        //
-        // In the hydra driver, we use it to unify our coordinate system with the HMD.
-        m_Pose.qWorldFromDriverRotation.w = m_WorldFromDriverRotation[3];
-        m_Pose.qWorldFromDriverRotation.x = m_WorldFromDriverRotation[0];
-        m_Pose.qWorldFromDriverRotation.y = m_WorldFromDriverRotation[1];
-        m_Pose.qWorldFromDriverRotation.z = m_WorldFromDriverRotation[2];
-        m_Pose.vecWorldFromDriverTranslation[0] = m_WorldFromDriverTranslation[0];
-        m_Pose.vecWorldFromDriverTranslation[1] = m_WorldFromDriverTranslation[1];
-        m_Pose.vecWorldFromDriverTranslation[2] = m_WorldFromDriverTranslation[2];
-
-        // The "head" coordinate system defines a natural point for the object.  While the "driver"
-        // space may be chosen for mechanical, eletrical, or mathematical convenience (e.g. being
-        // the location of the IMU), the "head" should be a point meaningful to the user.  For HMDs,
-        // it's the point directly between the user's eyes.  The origin of this coordinate system
-        // is the origin used for the rendermodel.
-        //
-        // This transform is multiplied on the right side of the "driver" pose.
-        //
-        // This transform was inadvertently left at identity for the GDC 2015 controllers, creating
-        // a defacto standard "head" position for controllers at the location of the IMU for that
-        // particular controller.  We will remedy that later by adding other, explicitly named and
-        // chosen spaces.  For now, mimicking that point in this driver lets us run content authored
-        // for the HTC Vive Developer Edition controller.  This was done by loading an existing
-        // controller rendermodel along side the Hydra model and rotating the Hydra model to roughly
-        // align the main features like the handle and trigger.
-        m_Pose.qDriverFromHeadRotation.w = 0.945519f;
-        m_Pose.qDriverFromHeadRotation.x = 0.325568f;
-        m_Pose.qDriverFromHeadRotation.y = 0.0f;
-        m_Pose.qDriverFromHeadRotation.z = 0.0f;
-        m_Pose.vecDriverFromHeadTranslation[0] = 0.000f;
-        m_Pose.vecDriverFromHeadTranslation[1] = 0.06413f;
-        m_Pose.vecDriverFromHeadTranslation[2] = -0.08695f;
-
-        // Set position
-        Vector3 pos = Vector3(cd.pos) * k_fScaleSixenseToMeters;
-        m_Pose.vecPosition[0] = pos[0];
-        m_Pose.vecPosition[1] = pos[1];
-        m_Pose.vecPosition[2] = pos[2];
-
-        // Angular acceleration: the Unity steamVR plugin only provides angular velocity 
-        // for the controller, so probably this is not too important.
-        m_Pose.vecAngularAcceleration[0] = 0.0f;
-        m_Pose.vecAngularAcceleration[1] = 0.0f;
-        m_Pose.vecAngularAcceleration[2] = 0.0f;
-
-        // Set rotational coordinates
-        m_Pose.qRotation.w = cd.rot_quat[3];
-        m_Pose.qRotation.x = cd.rot_quat[0];
-        m_Pose.qRotation.y = cd.rot_quat[1];
-        m_Pose.qRotation.z = cd.rot_quat[2];
-
-        // Update Sixense Utils data
-        m_Deriv.update(&cd);
-
-        if (!m_bEnableIMUEmulation) {
-            // The tradeoff here is that setting a valid velocity causes the controllers
-            // to jitter, but the controllers feel much more "alive" and lighter.
-            // The jitter while stationary is more annoying than the laggy feeling caused
-            // by disabling velocity (which effectively disables prediction for rendering).
-            // Even the Hydra (without IMU) could probably produce a better velocity here
-            // with a different filter on top of the raw position.  Perhaps someone feels
-            // like writing one??
-            m_Pose.vecVelocity[0] = 0.0;
-            m_Pose.vecVelocity[1] = 0.0;
-            m_Pose.vecVelocity[2] = 0.0;
-
-            // True acceleration is highly volatile, so it's not really reasonable to
-            // extrapolate much from it anyway.  Passing it as 0 from any driver should
-            // be fine.
-            m_Pose.vecAcceleration[0] = 0.0;
-            m_Pose.vecAcceleration[1] = 0.0;
-            m_Pose.vecAcceleration[2] = 0.0;
-
-            // Unmeasured.  XXX with no angular velocity, throwing might not work in some games
-            m_Pose.vecAngularVelocity[0] = 0.0;
-            m_Pose.vecAngularVelocity[1] = 0.0;
-            m_Pose.vecAngularVelocity[2] = 0.0;
-
-        }
-        else { // IMU Emulation
-
-            int updatetime_ = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - m_ControllerLastUpdateTime).count();
-
-            // Get velocity from sixense_utils
-            Vector3 vel = m_Deriv.getVelocity() * k_fScaleSixenseToMeters;
-
-            // Get acceleration from sixense_utils
-            Vector3 acc = m_Deriv.getAcceleration() * k_fScaleSixenseToMeters;
-
-            Eigen::Quaternionf rotation_ = Eigen::Quaternionf(cd.rot_quat[3], cd.rot_quat[0], cd.rot_quat[1], cd.rot_quat[2]);
-
-            if (m_bHasUpdateHistory) {
-
-                float expFactor_ = .1f; // smoothing factor
-
-                // add sixense_utils velocity with smoothing
-                m_Pose.vecVelocity[0] = expFactor_ * vel[0] + (1 - expFactor_) * m_LastVelocity[0];
-                m_Pose.vecVelocity[1] = expFactor_ * vel[1] + (1 - expFactor_) * m_LastVelocity[1];
-                m_Pose.vecVelocity[2] = expFactor_ * vel[2] + (1 - expFactor_) * m_LastVelocity[2];
-                //DriverLog("Sixense vel: %f, %f, %f \n", vel[0], vel[1], vel[2]);
-
-                // add sixense_utils acceleration with smoothing
-                m_Pose.vecAcceleration[0] = expFactor_ * acc[0] + (1 - expFactor_) * m_LastAcceleration[0];
-                m_Pose.vecAcceleration[1] = expFactor_ * acc[1] + (1 - expFactor_) * m_LastAcceleration[1];
-                m_Pose.vecAcceleration[2] = expFactor_ * acc[2] + (1 - expFactor_) * m_LastAcceleration[2];
-                //DriverLog("Sixense acc: %f, %f, %f \n", acc[0], acc[1], acc[2]);
-
-                // Calculate angular velocity
-                if (m_bEnableAngularVelocity) {
-
-                    // the angular velocity's axis of rotation is the difference of the last two quats
-                    Eigen::Quaternionf diff_ = m_ControllerLastRotation.conjugate() * rotation_;
-                    Eigen::AngleAxisf angax_ = Eigen::AngleAxisf(diff_);
-                    Eigen::Vector3f angvel_ = angax_.axis();
-
-                    // get angular distance of current rotation from last rotation
-                    float angdist_ = m_ControllerLastRotation.angularDistance(rotation_);
-
-                    // the magnitude of the special angle/axis type vector is the speed of the rotation around the axis in rad/s
-                    angvel_ = angvel_ * (angdist_ * 1000 * 1000 / updatetime_);
-
-                    // add the calculated angular velocity with smoothing applied
-                    m_Pose.vecAngularVelocity[0] = expFactor_ * angvel_.x() + (1 - expFactor_) * m_LastAngularVelocity.x();
-                    m_Pose.vecAngularVelocity[1] = expFactor_ * angvel_.y() + (1 - expFactor_) * m_LastAngularVelocity.y();
-                    m_Pose.vecAngularVelocity[2] = expFactor_ * angvel_.z() + (1 - expFactor_) * m_LastAngularVelocity.z();
-                    //DriverLog("angvel: ad: %f, x: %f, y: %f, z: %f \n", m_ControllerLastRotation.angularDistance(rotation_), angvel_.x(), angvel_.y(), angvel_.z());
-
-                    // refresh history
-                    for (int i = 0; i < 3; i++)
-                    {
-                        m_LastAngularVelocity[i] = m_Pose.vecAngularVelocity[i];
-                    }
-                }
-
-            }
-            else {
-                m_Pose.vecAcceleration[0] = .0f;
-                m_Pose.vecAcceleration[1] = .0f;
-                m_Pose.vecAcceleration[2] = .0f;
-
-                m_Pose.vecVelocity[0] = .0f;
-                m_Pose.vecVelocity[1] = .0f;
-                m_Pose.vecVelocity[2] = .0f;
-
-                m_Pose.vecAngularVelocity[0] = .0f;
-                m_Pose.vecAngularVelocity[1] = .0f;
-                m_Pose.vecAngularVelocity[2] = .0f;
-
-                m_LastAngularVelocity[0] = .0f;
-                m_LastAngularVelocity[1] = .0f;
-                m_LastAngularVelocity[2] = .0f;
-
-                m_bHasUpdateHistory = true;
-            }
-
-
-            // Refresh the history
-            m_ControllerLastUpdateTime = std::chrono::steady_clock::now();
-            m_ControllerLastRotation = rotation_;
-            for (int i = 0; i < 3; i++)
-            {
-                m_LastVelocity[i] = m_Pose.vecVelocity[i];
-                m_LastAcceleration[i] = m_Pose.vecAcceleration[i];
-            }
-        }
-
-        // Don't show user any controllers until they have hemisphere tracking and
-        // do the calibration gesture.  hydra_monitor should be prompting with an overlay
-        if (m_eHemisphereTrackingState != k_eHemisphereTrackingEnabled)
-            m_Pose.result = vr::TrackingResult_Uninitialized;
-        else if (!m_bCalibrated)
-            m_Pose.result = vr::TrackingResult_Calibrating_InProgress;
-        else
-            m_Pose.result = vr::TrackingResult_Running_OK;
-
-        m_Pose.poseIsValid = m_bCalibrated;
-        m_Pose.deviceIsConnected = true;
-
-        // These should always be false from any modern driver.  These are for Oculus DK1-like
-        // rotation-only tracking.  Support for that has likely rotted in vrserver.
-        m_Pose.willDriftInYaw = false;
-        m_Pose.shouldApplyHeadModel = false;
-
-        // This call posts this pose to shared memory, where all clients will have access to it the next
-        // moment they want to predict a pose.
-        vr::VRServerDriverHost()->TrackedDevicePoseUpdated(m_unObjectId, m_Pose, sizeof(DriverPose_t));
-    }
 
     bool IsHoldingSystemButton() const
     {
@@ -396,105 +187,6 @@ public:
         }
     }
 
-    void DelaySystemButtonForChording(sixenseControllerData & cd)
-    {
-        // Delay sending system button to vrserver while we see if it is being
-        // chorded with the other system button to reset the coordinate system
-        if (cd.buttons & SIXENSE_BUTTON_START)
-        {
-            switch (m_eSystemButtonState)
-            {
-            case k_eIdle:
-                m_eSystemButtonState = k_eWaiting;
-                m_SystemButtonDelay = std::chrono::steady_clock::now() + k_SystemButtonChordingDelay;
-                cd.buttons &= ~SIXENSE_BUTTON_START;
-                break;
-
-            case k_eWaiting:
-                if (std::chrono::steady_clock::now() >= m_SystemButtonDelay)
-                {
-                    m_eSystemButtonState = k_eSent;
-                    // leave button state set, will reach vrserver
-                }
-                else
-                {
-                    cd.buttons &= ~SIXENSE_BUTTON_START;
-                }
-                break;
-
-            case k_eSent:
-                // still held down, nothing to do
-                break;
-
-            case k_ePulsed:
-                // user re-pressed within 1 frame, just ignore lift
-                m_eSystemButtonState = k_eSent;
-                break;
-
-            case k_eBlocked:
-                // was consumed by chording gesture -- never send until released
-                cd.buttons &= ~SIXENSE_BUTTON_START;
-                break;
-            }
-        }
-        else
-        {
-            switch (m_eSystemButtonState)
-            {
-            case k_eIdle:
-            case k_eSent:
-            case k_eBlocked:
-                m_eSystemButtonState = k_eIdle;
-                break;
-
-            case k_eWaiting:
-                // user pressed and released the button within the timeout, so
-                // send a quick pulse to the application
-                m_eSystemButtonState = k_ePulsed;
-                m_SystemButtonDelay = std::chrono::steady_clock::now() + k_SystemButtonPulsingDuration;
-                cd.buttons |= SIXENSE_BUTTON_START;
-                break;
-
-            case k_ePulsed:
-                // stretch fake pulse so client sees it
-                if (std::chrono::steady_clock::now() >= m_SystemButtonDelay)
-                {
-                    m_eSystemButtonState = k_eIdle;
-                }
-                cd.buttons |= SIXENSE_BUTTON_START;
-                break;
-            }
-        }
-    }
-
-    // Initially block all button presses, stealing the first one to mean
-    // that the controller is pointing at the base and we should tell the Sixense SDK
-    bool WaitingForHemisphereTracking(sixenseControllerData & cd)
-    {
-        switch (m_eHemisphereTrackingState)
-        {
-        case k_eHemisphereTrackingDisabled:
-            if (cd.buttons || cd.trigger > 0.8f)
-            {
-                // First button press
-                m_eHemisphereTrackingState = k_eHemisphereTrackingButtonDown;
-            }
-            return true;
-
-        case k_eHemisphereTrackingButtonDown:
-            if (!cd.buttons && cd.trigger < 0.1f)
-            {
-                // Buttons released (so they won't leak into application), go!
-                sixenseAutoEnableHemisphereTracking(m_nId);
-                m_eHemisphereTrackingState = k_eHemisphereTrackingEnabled;
-            }
-            return true;
-
-        case k_eHemisphereTrackingEnabled:
-        default:
-            return false;
-        }
-    }
 
     // User initiated manual alignment of the coordinate system of driver_hydra with the HMD:
     //
@@ -683,21 +375,21 @@ public:
         //vr::VRProperties()->SetInt32Property(m_ulPropertyContainer, Prop_Axis0Type_Int32, k_eControllerAxis_TrackPad);
         //vr::VRProperties()->SetInt32Property(m_ulPropertyContainer, Prop_Axis1Type_Int32, k_eControllerAxis_Trigger);
         //vr::VRProperties()->SetBoolProperty(m_ulPropertyContainer, Prop_IsOnDesktop_Bool, false); // avoid "not fullscreen" warnings from vrmonitor
+        //vr::VRProperties()->SetInt32Property(m_ulPropertyContainer, Prop_ControllerRoleHint_Int32, TrackedControllerRole_RightHand);
 
         // TODO
         //vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, Prop_InputProfilePath_String, "{hydra}/input/mycontroller_profile.json");
-        //vr::VRProperties()->SetInt32Property(m_ulPropertyContainer, Prop_ControllerRoleHint_Int32, TrackedControllerRole_RightHand);
 
         // create all the input components
         vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/system/click", &m_compSystemButton);
         vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/grip/click", &m_compBumperButton);
-        vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/application_menu/click", &m_compButton1);
+        vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/application_menu/click", &m_compButton4);
         vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/trigger/click", &m_compTriggerButtonEmulated);
         vr::VRDriverInput()->CreateScalarComponent(m_ulPropertyContainer, "/input/trigger/value", &m_compTriggerAxis, VRScalarType_Absolute, VRScalarUnits_NormalizedOneSided);
         vr::VRDriverInput()->CreateScalarComponent(m_ulPropertyContainer, "/input/trackpad/x", &m_compJoystickAxisX, VRScalarType_Absolute, VRScalarUnits_NormalizedTwoSided);
         vr::VRDriverInput()->CreateScalarComponent(m_ulPropertyContainer, "/input/trackpad/y", &m_compJoystickAxisY, VRScalarType_Absolute, VRScalarUnits_NormalizedTwoSided);
         vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/trackpad/click", &m_compJoystickButton);
-        vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/trackpad/touch", &m_compJoystickTouchEmulated);
+        vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/trackpad/touch", &m_compJoystickTouch);
         vr::VRDriverInput()->CreateHapticComponent(m_ulPropertyContainer, "/output/haptic", &m_compHaptic);
 
         return VRInitError_None;
@@ -743,11 +435,6 @@ public:
         // Your driver would read whatever hardware state is associated with its input components and pass that
         // in to UpdateBooleanComponent. This could happen in RunFrame or on a thread of your own that's reading USB
         // state. There's no need to update input state unless it changes, but it doesn't do any harm to do so.
-
-        // TODO
-        //vr::VRDriverInput()->UpdateBooleanComponent(m_compA, (0x8000 & GetAsyncKeyState('A')) != 0, 0);
-        //vr::VRDriverInput()->UpdateBooleanComponent(m_compB, (0x8000 & GetAsyncKeyState('B')) != 0, 0);
-        //vr::VRDriverInput()->UpdateBooleanComponent(m_compC, (0x8000 & GetAsyncKeyState('C')) != 0, 0);
 #endif
     }
 
@@ -777,7 +464,7 @@ private:
 
     vr::VRInputComponentHandle_t m_compSystemButton;
     vr::VRInputComponentHandle_t m_compJoystickButton;
-    vr::VRInputComponentHandle_t m_compJoystickTouchEmulated;
+    vr::VRInputComponentHandle_t m_compJoystickTouch;
     vr::VRInputComponentHandle_t m_compJoystickAxisX;
     vr::VRInputComponentHandle_t m_compJoystickAxisY;
     vr::VRInputComponentHandle_t m_compTriggerButtonEmulated;
@@ -827,6 +514,10 @@ private:
     static const std::chrono::milliseconds k_SystemButtonChordingDelay;
     static const std::chrono::milliseconds k_SystemButtonPulsingDuration;
 
+    typedef void (vr::IVRServerDriverHost::*ButtonUpdate)(uint32_t unWhichDevice, vr::EVRButtonId eButtonId, double eventTimeOffset);
+    void SendButtonUpdates(ButtonUpdate ButtonEvent, uint64_t ulMask);
+
+
     // IMU emulation things
     std::chrono::steady_clock::time_point m_ControllerLastUpdateTime;
     Eigen::Quaternionf m_ControllerLastRotation;
@@ -841,6 +532,381 @@ private:
     bool m_bEnableIMUEmulation;
     bool m_bEnableDeveloperMode;
     float m_fJoystickDeadzone;
+
+    void UpdateControllerState(sixenseControllerData & cd)
+    {
+        /**
+        * Handling button presses for the user switchable features go here,
+        * before the driver state is updated.
+        */
+
+        // Developer mode
+        if (m_bEnableDeveloperMode) {
+            // Button 1 toggles imu emulation
+            if (cd.buttons & SIXENSE_BUTTON_1) {
+                m_bEnableIMUEmulation = !m_bEnableIMUEmulation;
+                m_bHasUpdateHistory = false;
+            }
+            // Button 2 toggles angular velocity emulation
+            if (cd.buttons & SIXENSE_BUTTON_2) {
+                m_bEnableAngularVelocity = !m_bEnableAngularVelocity;
+            }
+        }
+
+        // "Hold Thumbpad" mode removes the joystick deadzone while Button 3 is pressed.
+        // This is needed for full compatibility with the Vive's trackpad.
+        float effectiveJoyDeadzone = m_fJoystickDeadzone;
+        bool holdingThumbpad = false;
+        if (m_bEnableHoldThumbpad && (cd.buttons & SIXENSE_BUTTON_3)) {
+            effectiveJoyDeadzone = -1.0f;
+            bool holdingThumbpad = true;
+        }
+
+        /**
+        * Update input components
+        */
+        // app menu button
+        vr::VRDriverInput()->UpdateBooleanComponent(m_compButton4, cd.buttons & SIXENSE_BUTTON_4, 0);
+
+        // grip button
+        vr::VRDriverInput()->UpdateBooleanComponent(m_compBumperButton, cd.buttons & SIXENSE_BUTTON_BUMPER, 0);
+
+        // system button
+        vr::VRDriverInput()->UpdateBooleanComponent(m_compSystemButton, cd.buttons & SIXENSE_BUTTON_START, 0);
+
+        // trigger axis
+        vr::VRDriverInput()->UpdateScalarComponent(m_compTriggerAxis, cd.trigger, 0);
+
+        // trigger button
+        vr::VRDriverInput()->UpdateBooleanComponent(m_compTriggerButtonEmulated, cd.trigger > 0.8f, 0);
+
+        // joystick button
+        vr::VRDriverInput()->UpdateBooleanComponent(m_compJoystickButton, cd.buttons & SIXENSE_BUTTON_JOYSTICK, 0);
+
+        // joystick axis
+        if (fabsf(cd.joystick_x) > effectiveJoyDeadzone || fabsf(cd.joystick_y) > effectiveJoyDeadzone)
+        {
+            vr::VRDriverInput()->UpdateScalarComponent(m_compJoystickAxisX, cd.joystick_x, 0);
+            vr::VRDriverInput()->UpdateScalarComponent(m_compJoystickAxisY, cd.joystick_y, 0);
+            vr::VRDriverInput()->UpdateBooleanComponent(m_compJoystickTouch, true, 0);
+        }
+        else
+        {
+            vr::VRDriverInput()->UpdateScalarComponent(m_compJoystickAxisX, 0, 0);
+            vr::VRDriverInput()->UpdateScalarComponent(m_compJoystickAxisY, 0, 0);
+            vr::VRDriverInput()->UpdateBooleanComponent(m_compJoystickTouch, cd.buttons & SIXENSE_BUTTON_JOYSTICK, 0);
+        }
+    }
+
+    void UpdateTrackingState(sixenseControllerData & cd)
+    {
+        using namespace sixenseMath;
+
+        // This is very hard to know with this driver, but CServerDriver_Hydra::ThreadFunc
+        // tries to reduce latency as much as possible.  There is filtering in the Sixense SDK,
+        // though, which causes additional unknown latency.  This time is used to know how much
+        // extrapolation (via velocity and angular velocity) should be done when predicting poses.
+        m_Pose.poseTimeOffset = -0.016f;
+
+        // The "driver" coordinate system is the one that vecPosition is in.  This is whatever
+        // coordinates the driver naturally produces for position and orientation.  The "world"
+        // coordinate system is the one that is presented to vrserver.  This should include
+        // fixing any tilt to the world (caused by a tilted camera, for example) and can include
+        // any other useful transformation for the driver (e.g. the driver is tracking from a
+        // secondary camera, but uses this transform to move this object into the primary camera
+        // coordinate system to be consistent with other objects).
+        //
+        // This transform is multiplied on the left of the predicted "driver" pose.  That becomes
+        // the vr::TrackingUniverseRawAndUncalibrated origin, which is then further offset for
+        // floor height and tracking space center by the chaperone system to produce both the
+        // vr::TrackingUniverseSeated and vr::TrackingUniverseStanding spaces.
+        //
+        // In the hydra driver, we use it to unify our coordinate system with the HMD.
+        m_Pose.qWorldFromDriverRotation.w = m_WorldFromDriverRotation[3];
+        m_Pose.qWorldFromDriverRotation.x = m_WorldFromDriverRotation[0];
+        m_Pose.qWorldFromDriverRotation.y = m_WorldFromDriverRotation[1];
+        m_Pose.qWorldFromDriverRotation.z = m_WorldFromDriverRotation[2];
+        m_Pose.vecWorldFromDriverTranslation[0] = m_WorldFromDriverTranslation[0];
+        m_Pose.vecWorldFromDriverTranslation[1] = m_WorldFromDriverTranslation[1];
+        m_Pose.vecWorldFromDriverTranslation[2] = m_WorldFromDriverTranslation[2];
+
+        // The "head" coordinate system defines a natural point for the object.  While the "driver"
+        // space may be chosen for mechanical, eletrical, or mathematical convenience (e.g. being
+        // the location of the IMU), the "head" should be a point meaningful to the user.  For HMDs,
+        // it's the point directly between the user's eyes.  The origin of this coordinate system
+        // is the origin used for the rendermodel.
+        //
+        // This transform is multiplied on the right side of the "driver" pose.
+        //
+        // This transform was inadvertently left at identity for the GDC 2015 controllers, creating
+        // a defacto standard "head" position for controllers at the location of the IMU for that
+        // particular controller.  We will remedy that later by adding other, explicitly named and
+        // chosen spaces.  For now, mimicking that point in this driver lets us run content authored
+        // for the HTC Vive Developer Edition controller.  This was done by loading an existing
+        // controller rendermodel along side the Hydra model and rotating the Hydra model to roughly
+        // align the main features like the handle and trigger.
+        m_Pose.qDriverFromHeadRotation.w = 0.945519f;
+        m_Pose.qDriverFromHeadRotation.x = 0.325568f;
+        m_Pose.qDriverFromHeadRotation.y = 0.0f;
+        m_Pose.qDriverFromHeadRotation.z = 0.0f;
+        m_Pose.vecDriverFromHeadTranslation[0] = 0.000f;
+        m_Pose.vecDriverFromHeadTranslation[1] = 0.06413f;
+        m_Pose.vecDriverFromHeadTranslation[2] = -0.08695f;
+
+        // Set position
+        Vector3 pos = Vector3(cd.pos) * k_fScaleSixenseToMeters;
+        m_Pose.vecPosition[0] = pos[0];
+        m_Pose.vecPosition[1] = pos[1];
+        m_Pose.vecPosition[2] = pos[2];
+
+        // Angular acceleration: the Unity steamVR plugin only provides angular velocity 
+        // for the controller, so probably this is not too important.
+        m_Pose.vecAngularAcceleration[0] = 0.0f;
+        m_Pose.vecAngularAcceleration[1] = 0.0f;
+        m_Pose.vecAngularAcceleration[2] = 0.0f;
+
+        // Set rotational coordinates
+        m_Pose.qRotation.w = cd.rot_quat[3];
+        m_Pose.qRotation.x = cd.rot_quat[0];
+        m_Pose.qRotation.y = cd.rot_quat[1];
+        m_Pose.qRotation.z = cd.rot_quat[2];
+
+        // Update Sixense Utils data
+        m_Deriv.update(&cd);
+
+        if (!m_bEnableIMUEmulation) {
+            // The tradeoff here is that setting a valid velocity causes the controllers
+            // to jitter, but the controllers feel much more "alive" and lighter.
+            // The jitter while stationary is more annoying than the laggy feeling caused
+            // by disabling velocity (which effectively disables prediction for rendering).
+            // Even the Hydra (without IMU) could probably produce a better velocity here
+            // with a different filter on top of the raw position.  Perhaps someone feels
+            // like writing one??
+            m_Pose.vecVelocity[0] = 0.0;
+            m_Pose.vecVelocity[1] = 0.0;
+            m_Pose.vecVelocity[2] = 0.0;
+
+            // True acceleration is highly volatile, so it's not really reasonable to
+            // extrapolate much from it anyway.  Passing it as 0 from any driver should
+            // be fine.
+            m_Pose.vecAcceleration[0] = 0.0;
+            m_Pose.vecAcceleration[1] = 0.0;
+            m_Pose.vecAcceleration[2] = 0.0;
+
+            // Unmeasured.  XXX with no angular velocity, throwing might not work in some games
+            m_Pose.vecAngularVelocity[0] = 0.0;
+            m_Pose.vecAngularVelocity[1] = 0.0;
+            m_Pose.vecAngularVelocity[2] = 0.0;
+
+        }
+        else { // IMU Emulation
+
+            int updatetime_ = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - m_ControllerLastUpdateTime).count();
+
+            // Get velocity from sixense_utils
+            Vector3 vel = m_Deriv.getVelocity() * k_fScaleSixenseToMeters;
+
+            // Get acceleration from sixense_utils
+            Vector3 acc = m_Deriv.getAcceleration() * k_fScaleSixenseToMeters;
+
+            Eigen::Quaternionf rotation_ = Eigen::Quaternionf(cd.rot_quat[3], cd.rot_quat[0], cd.rot_quat[1], cd.rot_quat[2]);
+
+            if (m_bHasUpdateHistory) {
+
+                float expFactor_ = .1f; // smoothing factor
+
+                                        // add sixense_utils velocity with smoothing
+                m_Pose.vecVelocity[0] = expFactor_ * vel[0] + (1 - expFactor_) * m_LastVelocity[0];
+                m_Pose.vecVelocity[1] = expFactor_ * vel[1] + (1 - expFactor_) * m_LastVelocity[1];
+                m_Pose.vecVelocity[2] = expFactor_ * vel[2] + (1 - expFactor_) * m_LastVelocity[2];
+                //DriverLog("Sixense vel: %f, %f, %f \n", vel[0], vel[1], vel[2]);
+
+                // add sixense_utils acceleration with smoothing
+                m_Pose.vecAcceleration[0] = expFactor_ * acc[0] + (1 - expFactor_) * m_LastAcceleration[0];
+                m_Pose.vecAcceleration[1] = expFactor_ * acc[1] + (1 - expFactor_) * m_LastAcceleration[1];
+                m_Pose.vecAcceleration[2] = expFactor_ * acc[2] + (1 - expFactor_) * m_LastAcceleration[2];
+                //DriverLog("Sixense acc: %f, %f, %f \n", acc[0], acc[1], acc[2]);
+
+                // Calculate angular velocity
+                if (m_bEnableAngularVelocity) {
+
+                    // the angular velocity's axis of rotation is the difference of the last two quats
+                    Eigen::Quaternionf diff_ = m_ControllerLastRotation.conjugate() * rotation_;
+                    Eigen::AngleAxisf angax_ = Eigen::AngleAxisf(diff_);
+                    Eigen::Vector3f angvel_ = angax_.axis();
+
+                    // get angular distance of current rotation from last rotation
+                    float angdist_ = m_ControllerLastRotation.angularDistance(rotation_);
+
+                    // the magnitude of the special angle/axis type vector is the speed of the rotation around the axis in rad/s
+                    angvel_ = angvel_ * (angdist_ * 1000 * 1000 / updatetime_);
+
+                    // add the calculated angular velocity with smoothing applied
+                    m_Pose.vecAngularVelocity[0] = expFactor_ * angvel_.x() + (1 - expFactor_) * m_LastAngularVelocity.x();
+                    m_Pose.vecAngularVelocity[1] = expFactor_ * angvel_.y() + (1 - expFactor_) * m_LastAngularVelocity.y();
+                    m_Pose.vecAngularVelocity[2] = expFactor_ * angvel_.z() + (1 - expFactor_) * m_LastAngularVelocity.z();
+                    //DriverLog("angvel: ad: %f, x: %f, y: %f, z: %f \n", m_ControllerLastRotation.angularDistance(rotation_), angvel_.x(), angvel_.y(), angvel_.z());
+
+                    // refresh history
+                    for (int i = 0; i < 3; i++)
+                    {
+                        m_LastAngularVelocity[i] = m_Pose.vecAngularVelocity[i];
+                    }
+                }
+
+            }
+            else {
+                m_Pose.vecAcceleration[0] = .0f;
+                m_Pose.vecAcceleration[1] = .0f;
+                m_Pose.vecAcceleration[2] = .0f;
+
+                m_Pose.vecVelocity[0] = .0f;
+                m_Pose.vecVelocity[1] = .0f;
+                m_Pose.vecVelocity[2] = .0f;
+
+                m_Pose.vecAngularVelocity[0] = .0f;
+                m_Pose.vecAngularVelocity[1] = .0f;
+                m_Pose.vecAngularVelocity[2] = .0f;
+
+                m_LastAngularVelocity[0] = .0f;
+                m_LastAngularVelocity[1] = .0f;
+                m_LastAngularVelocity[2] = .0f;
+
+                m_bHasUpdateHistory = true;
+            }
+
+
+            // Refresh the history
+            m_ControllerLastUpdateTime = std::chrono::steady_clock::now();
+            m_ControllerLastRotation = rotation_;
+            for (int i = 0; i < 3; i++)
+            {
+                m_LastVelocity[i] = m_Pose.vecVelocity[i];
+                m_LastAcceleration[i] = m_Pose.vecAcceleration[i];
+            }
+        }
+
+        // Don't show user any controllers until they have hemisphere tracking and
+        // do the calibration gesture.  hydra_monitor should be prompting with an overlay
+        if (m_eHemisphereTrackingState != k_eHemisphereTrackingEnabled)
+            m_Pose.result = vr::TrackingResult_Uninitialized;
+        else if (!m_bCalibrated)
+            m_Pose.result = vr::TrackingResult_Calibrating_InProgress;
+        else
+            m_Pose.result = vr::TrackingResult_Running_OK;
+
+        m_Pose.poseIsValid = m_bCalibrated;
+        m_Pose.deviceIsConnected = true;
+
+        // These should always be false from any modern driver.  These are for Oculus DK1-like
+        // rotation-only tracking.  Support for that has likely rotted in vrserver.
+        m_Pose.willDriftInYaw = false;
+        m_Pose.shouldApplyHeadModel = false;
+
+        // This call posts this pose to shared memory, where all clients will have access to it the next
+        // moment they want to predict a pose.
+        vr::VRServerDriverHost()->TrackedDevicePoseUpdated(m_unObjectId, m_Pose, sizeof(DriverPose_t));
+    }
+
+    void DelaySystemButtonForChording(sixenseControllerData & cd)
+    {
+        // Delay sending system button to vrserver while we see if it is being
+        // chorded with the other system button to reset the coordinate system
+        if (cd.buttons & SIXENSE_BUTTON_START)
+        {
+            switch (m_eSystemButtonState)
+            {
+            case k_eIdle:
+                m_eSystemButtonState = k_eWaiting;
+                m_SystemButtonDelay = std::chrono::steady_clock::now() + k_SystemButtonChordingDelay;
+                cd.buttons &= ~SIXENSE_BUTTON_START;
+                break;
+
+            case k_eWaiting:
+                if (std::chrono::steady_clock::now() >= m_SystemButtonDelay)
+                {
+                    m_eSystemButtonState = k_eSent;
+                    // leave button state set, will reach vrserver
+                }
+                else
+                {
+                    cd.buttons &= ~SIXENSE_BUTTON_START;
+                }
+                break;
+
+            case k_eSent:
+                // still held down, nothing to do
+                break;
+
+            case k_ePulsed:
+                // user re-pressed within 1 frame, just ignore lift
+                m_eSystemButtonState = k_eSent;
+                break;
+
+            case k_eBlocked:
+                // was consumed by chording gesture -- never send until released
+                cd.buttons &= ~SIXENSE_BUTTON_START;
+                break;
+            }
+        }
+        else
+        {
+            switch (m_eSystemButtonState)
+            {
+            case k_eIdle:
+            case k_eSent:
+            case k_eBlocked:
+                m_eSystemButtonState = k_eIdle;
+                break;
+
+            case k_eWaiting:
+                // user pressed and released the button within the timeout, so
+                // send a quick pulse to the application
+                m_eSystemButtonState = k_ePulsed;
+                m_SystemButtonDelay = std::chrono::steady_clock::now() + k_SystemButtonPulsingDuration;
+                cd.buttons |= SIXENSE_BUTTON_START;
+                break;
+
+            case k_ePulsed:
+                // stretch fake pulse so client sees it
+                if (std::chrono::steady_clock::now() >= m_SystemButtonDelay)
+                {
+                    m_eSystemButtonState = k_eIdle;
+                }
+                cd.buttons |= SIXENSE_BUTTON_START;
+                break;
+            }
+        }
+    }
+
+    // Initially block all button presses, stealing the first one to mean
+    // that the controller is pointing at the base and we should tell the Sixense SDK
+    bool WaitingForHemisphereTracking(sixenseControllerData & cd)
+    {
+        switch (m_eHemisphereTrackingState)
+        {
+        case k_eHemisphereTrackingDisabled:
+            if (cd.buttons || cd.trigger > 0.8f)
+            {
+                // First button press
+                m_eHemisphereTrackingState = k_eHemisphereTrackingButtonDown;
+            }
+            return true;
+
+        case k_eHemisphereTrackingButtonDown:
+            if (!cd.buttons && cd.trigger < 0.1f)
+            {
+                // Buttons released (so they won't leak into application), go!
+                sixenseAutoEnableHemisphereTracking(m_nId);
+                m_eHemisphereTrackingState = k_eHemisphereTrackingEnabled;
+            }
+            return true;
+
+        case k_eHemisphereTrackingEnabled:
+        default:
+            return false;
+        }
+    }
 
 };
 
