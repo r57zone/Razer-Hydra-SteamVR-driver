@@ -19,6 +19,7 @@
 #include <sixense.h>
 #include <sixense_math.hpp>
 #include <sixense_utils/derivatives.hpp>
+#include <Eigen/Geometry>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -296,17 +297,139 @@ public:
             -std::chrono::duration_cast<std::chrono::seconds>(k_SystemButtonChordingDelay).count());
     }
 
-
-    CHydraControllerDriver(int base, int n)
+    // hydra_monitor called us back with the HMD information
+    // (Note we should probably cache pose at the moment of the chording, but we just use current here)
+    void FinishRealignCoordinates(sixenseMath::Matrix3 & matHmdRotation, sixenseMath::Vector3 & vecHmdPosition)
     {
-        m_unObjectId = vr::k_unTrackedDeviceIndexInvalid;
-        m_ulPropertyContainer = vr::k_ulInvalidPropertyContainer;
+        using namespace sixenseMath;
 
-        char buf[256];
+        CHydraControllerDriver * pHydraA = this;
+        CHydraControllerDriver * pHydraB = m_pAlignmentPartner;
+
+        if (!pHydraA || !pHydraB)
+            return;
+
+        // Assign left/right arbitrarily for a second
+        Vector3 posLeft(pHydraA->m_Pose.vecPosition[0], pHydraA->m_Pose.vecPosition[1], pHydraA->m_Pose.vecPosition[2]);
+        Vector3 posRight(pHydraB->m_Pose.vecPosition[0], pHydraB->m_Pose.vecPosition[1], pHydraB->m_Pose.vecPosition[2]);
+
+        Vector3 posCenter = (posLeft + posRight) * 0.5f;
+        Vector3 posDiff = posRight - posLeft;
+
+        // Choose arbitrary controller for hint about which one is on the right:
+        // Assume controllers are roughly upright, so +X vector points across body.
+        Quat q1(pHydraA->m_Pose.qRotation.x, pHydraA->m_Pose.qRotation.y, pHydraA->m_Pose.qRotation.z, pHydraA->m_Pose.qRotation.w);
+        Vector3 rightProbe = q1 * Vector3(1, 0, 0);
+        if (rightProbe * posDiff < 0) // * is dot product
+        {
+            std::swap(posLeft, posRight);
+            posDiff = posDiff * -1.0f;
+        }
+
+        // Find a vector pointing forward relative to the hands, so we can rotate
+        // that to match forward for the head.  Use -Y by right hand rule.
+        Vector3 hydraFront = posDiff ^ Vector3(0, -1, 0); // ^ is cross product
+        Vector3 hmdFront = matHmdRotation * Vector3(0, 0, -1); // -Z implicitly forward
+
+        // Project both "front" vectors onto the XZ plane (we only care about yaw,
+        // because we assume the HMD space is Y up, and hydra space is also Y up,
+        // assuming the base is level).
+        hydraFront[1] = 0.0f;
+        hmdFront[1] = 0.0f;
+
+        // Rotation is what makes the hydraFront point toward hmdFront
+        Quat rotation = Quat::rotation(hydraFront, hmdFront);
+
+        // Adjust for the natural pose of HMD vs controllers
+        Vector3 vecAlignPosition = vecHmdPosition + Vector3(0, -0.100f, -0.100f);
+        Vector3 translation = vecAlignPosition - rotation * posCenter;
+
+        // Note that it is very common for all objects from a given driver to share
+        // the same world transforms, because they are in the same driver space and
+        // the same world space.
+        pHydraA->m_WorldFromDriverTranslation = translation;
+        pHydraA->m_WorldFromDriverRotation = rotation;
+        pHydraA->m_bCalibrated = true;
+        pHydraB->m_WorldFromDriverTranslation = translation;
+        pHydraB->m_WorldFromDriverRotation = rotation;
+        pHydraB->m_bCalibrated = true;
+    }
+
+    void DebugRequest(const char * pchRequest, char * pchResponseBuffer, uint32_t unResponseBufferSize)
+    {
+        std::istringstream ss(pchRequest);
+        std::string strCmd;
+
+        ss >> strCmd;
+        if (strCmd == "hydra:realign_coordinates")
+        {
+            // hydra_monitor is calling us back with HMD tracking information so we can
+            // finish realigning our coordinate system to the HMD's
+            float m[3][3], v[3];
+            for (int i = 0; i < 3; ++i)
+            {
+                for (int j = 0; j < 3; ++j)
+                {
+                    // Note the transpose, because sixenseMath::Matrix3 and vr::HmdMatrix34_t disagree on row/col major
+                    ss >> m[j][i];
+                }
+                ss >> v[i];
+            }
+            sixenseMath::Matrix3 matRot(m);
+            sixenseMath::Vector3 matPos(v);
+
+            FinishRealignCoordinates(matRot, matPos);
+        }
+
+        /*
+        if (unResponseBufferSize >= 1)
+            pchResponseBuffer[0] = 0;
+        */
+    }
+
+    CHydraControllerDriver(int base, int n):
+        m_nBase(base),
+        m_nId(n),
+        m_ucPoseSequenceNumber(0),
+        m_eHemisphereTrackingState(k_eHemisphereTrackingDisabled),
+        m_bCalibrated(false),
+        m_pAlignmentPartner(NULL),
+        m_eSystemButtonState(k_eIdle),
+        m_unObjectId(vr::k_unTrackedDeviceIndexInvalid),
+        m_ulPropertyContainer(vr::k_ulInvalidPropertyContainer)
+    {
+        char buf[1024];
         GenerateSerialNumber(buf, sizeof(buf), base, n);
         m_sSerialNumber = buf;
-
         m_sModelNumber = "Razer Hydra";
+
+        memset(&m_ControllerState, 0, sizeof(m_ControllerState));
+        memset(&m_Pose, 0, sizeof(m_Pose));
+        m_Pose.result = vr::TrackingResult_Calibrating_InProgress;
+
+        sixenseControllerData cd;
+        sixenseGetNewestData(m_nId, &cd);
+        m_firmware_revision = cd.firmware_revision;
+        m_hardware_revision = cd.hardware_revision;
+
+        DriverLog("Using settings values\n");
+
+        // assign rendermodel
+        vr::VRSettings()->GetString(k_pch_Hydra_Section, k_pch_Hydra_RenderModel_String, buf, sizeof(buf));
+        m_sRenderModel = buf;
+
+        // enable IMU emulation
+        m_bEnableIMUEmulation = vr::VRSettings()->GetBool(k_pch_Hydra_Section, k_pch_Hydra_EnableIMU_Bool);
+        m_bEnableAngularVelocity = true;
+
+        // set joystick deadzone
+        m_fJoystickDeadzone = vr::VRSettings()->GetFloat(k_pch_Hydra_Section, k_pch_Hydra_JoystickDeadzone_Float);
+
+        // enable developer features
+        m_bEnableDeveloperMode = vr::VRSettings()->GetBool(k_pch_Hydra_Section, k_pch_Hydra_EnableDeveloperMode_Bool);
+
+        // "Hold Thumbpad" mode (not user configurable)
+        m_bEnableHoldThumbpad = true;
     }
 
     virtual ~CHydraControllerDriver()
@@ -316,7 +439,14 @@ public:
 
     virtual EVRInitError Activate(vr::TrackedDeviceIndex_t unObjectId)
     {
+        DriverLog("CHydraHmdLatest::Activate: %s is object id %d\n", GetSerialNumber(), unObjectId);
+
         m_unObjectId = unObjectId;
+
+        //g_ServerTrackedDeviceProvider.LaunchHydraMonitor();
+
+
+        /*
         m_ulPropertyContainer = vr::VRProperties()->TrackedDeviceToPropertyContainer(m_unObjectId);
 
         vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, Prop_ModelNumber_String, m_sModelNumber.c_str());
@@ -346,12 +476,14 @@ public:
 
         // create our haptic component
         vr::VRDriverInput()->CreateHapticComponent(m_ulPropertyContainer, "/output/haptic", &m_compHaptic);
+        */
 
         return VRInitError_None;
     }
 
     virtual void Deactivate()
     {
+        DriverLog("CHydraHmdLatest::Deactivate: %s was object id %d\n", GetSerialNumber(), m_unObjectId);
         m_unObjectId = vr::k_unTrackedDeviceIndexInvalid;
     }
 
@@ -367,13 +499,6 @@ public:
 
     virtual void PowerOff()
     {
-    }
-
-    /** debug request from a client */
-    virtual void DebugRequest(const char *pchRequest, char *pchResponseBuffer, uint32_t unResponseBufferSize)
-    {
-        if (unResponseBufferSize >= 1)
-            pchResponseBuffer[0] = 0;
     }
 
     virtual DriverPose_t GetPose()
@@ -421,6 +546,7 @@ public:
 
     std::string GetSerialNumber() const { return m_sSerialNumber; }
 
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 private:
     vr::TrackedDeviceIndex_t m_unObjectId;
     vr::PropertyContainerHandle_t m_ulPropertyContainer;
@@ -432,6 +558,7 @@ private:
 
     std::string m_sSerialNumber;
     std::string m_sModelNumber;
+    std::string m_sRenderModel;
 
     // Which Hydra controller
     int m_nBase;
@@ -439,6 +566,10 @@ private:
 
     // Used to deduplicate state data from the sixense driver
     uint8_t m_ucPoseSequenceNumber;
+
+    // To main structures for passing state to vrserver
+    vr::DriverPose_t m_Pose;
+    vr::VRControllerState_t m_ControllerState;
 
     // Ancillary tracking state
     sixenseMath::Vector3 m_WorldFromDriverTranslation;
@@ -454,9 +585,28 @@ private:
     std::chrono::steady_clock::time_point m_SystemButtonDelay;
     enum { k_eIdle, k_eWaiting, k_eSent, k_ePulsed, k_eBlocked } m_eSystemButtonState;
 
+    // Cached for answering version queries from vrserver
+    unsigned short m_firmware_revision;
+    unsigned short m_hardware_revision;
+
     static const float k_fScaleSixenseToMeters;
     static const std::chrono::milliseconds k_SystemButtonChordingDelay;
     static const std::chrono::milliseconds k_SystemButtonPulsingDuration;
+
+    // IMU emulation things
+    std::chrono::steady_clock::time_point m_ControllerLastUpdateTime;
+    Eigen::Quaternionf m_ControllerLastRotation;
+    sixenseMath::Vector3 m_LastVelocity;
+    sixenseMath::Vector3 m_LastAcceleration;
+    Eigen::Vector3f m_LastAngularVelocity;
+    bool m_bHasUpdateHistory;
+    bool m_bEnableAngularVelocity;
+    bool m_bEnableHoldThumbpad;
+
+    // steamvr.vrsettings config values
+    bool m_bEnableIMUEmulation;
+    bool m_bEnableDeveloperMode;
+    float m_fJoystickDeadzone;
 
 };
 
