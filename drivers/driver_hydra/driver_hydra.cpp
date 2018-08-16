@@ -401,7 +401,8 @@ public:
         char buf[1024];
         GenerateSerialNumber(buf, sizeof(buf), base, n);
         m_sSerialNumber = buf;
-        m_sModelNumber = "Razer Hydra";
+        m_sModelNumber = "Hydra";
+        m_sManufacturerName = "Razer";
 
         memset(&m_ControllerState, 0, sizeof(m_ControllerState));
         memset(&m_Pose, 0, sizeof(m_Pose));
@@ -439,51 +440,53 @@ public:
 
     virtual EVRInitError Activate(vr::TrackedDeviceIndex_t unObjectId)
     {
-        DriverLog("CHydraHmdLatest::Activate: %s is object id %d\n", GetSerialNumber(), unObjectId);
+        DriverLog("CHydraControllerDriver::Activate: %s is object id %d\n", GetSerialNumber().c_str(), unObjectId);
 
         m_unObjectId = unObjectId;
 
+        // TODO
         //g_ServerTrackedDeviceProvider.LaunchHydraMonitor();
 
-
-        /*
         m_ulPropertyContainer = vr::VRProperties()->TrackedDeviceToPropertyContainer(m_unObjectId);
 
         vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, Prop_ModelNumber_String, m_sModelNumber.c_str());
+        vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, Prop_SerialNumber_String, m_sSerialNumber.c_str());
+        vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, Prop_RenderModelName_String, m_sRenderModel.c_str());
+        vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, Prop_ManufacturerName_String, m_sManufacturerName.c_str());
+        vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, Prop_TrackingFirmwareVersion_String, "cd.firmware_revision=" + m_firmware_revision);
+        vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, Prop_HardwareRevision_String, "cd.hardware_revision=" + m_hardware_revision);
+        vr::VRProperties()->SetUint64Property(m_ulPropertyContainer, Prop_FirmwareVersion_Uint64, m_firmware_revision);
+        vr::VRProperties()->SetUint64Property(m_ulPropertyContainer, Prop_HardwareRevision_Uint64, m_hardware_revision);
 
-        vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, Prop_RenderModelName_String, m_sModelNumber.c_str());
+        // probably not needed
+        //vr::VRProperties()->SetUint64Property(m_ulPropertyContainer, Prop_CurrentUniverseId_Uint64, 2);
+        //vr::VRProperties()->SetInt32Property(m_ulPropertyContainer, Prop_DeviceClass_Int32, TrackedDeviceClass_Controller);
+        //vr::VRProperties()->SetInt32Property(m_ulPropertyContainer, Prop_Axis0Type_Int32, k_eControllerAxis_TrackPad);
+        //vr::VRProperties()->SetInt32Property(m_ulPropertyContainer, Prop_Axis1Type_Int32, k_eControllerAxis_Trigger);
+        //vr::VRProperties()->SetBoolProperty(m_ulPropertyContainer, Prop_IsOnDesktop_Bool, false); // avoid "not fullscreen" warnings from vrmonitor
 
-        // return a constant that's not 0 (invalid) or 1 (reserved for Oculus)
-        vr::VRProperties()->SetUint64Property(m_ulPropertyContainer, Prop_CurrentUniverseId_Uint64, 2);
-
-        // avoid "not fullscreen" warnings from vrmonitor
-        vr::VRProperties()->SetBoolProperty(m_ulPropertyContainer, Prop_IsOnDesktop_Bool, false);
-
-        // our hydra device isn't actually tracked, so set this property to avoid having the icon blink in the status window
-        vr::VRProperties()->SetBoolProperty(m_ulPropertyContainer, Prop_NeverTracked_Bool, true);
-
-        // even though we won't ever track we want to pretend to be the right hand so binding will work as expected
-        vr::VRProperties()->SetInt32Property(m_ulPropertyContainer, Prop_ControllerRoleHint_Int32, TrackedControllerRole_RightHand);
-
-        // this file tells the UI what to show the user for binding this controller as well as what default bindings should
-        // be for legacy or other apps
-        vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, Prop_InputProfilePath_String, "{hydra}/input/mycontroller_profile.json");
+        // TODO
+        //vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, Prop_InputProfilePath_String, "{hydra}/input/mycontroller_profile.json");
+        //vr::VRProperties()->SetInt32Property(m_ulPropertyContainer, Prop_ControllerRoleHint_Int32, TrackedControllerRole_RightHand);
 
         // create all the input components
-        vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/a/click", &m_compA);
-        vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/b/click", &m_compB);
-        vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/c/click", &m_compC);
-
-        // create our haptic component
+        vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/system/click", &m_compSystemButton);
+        vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/grip/click", &m_compBumperButton);
+        vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/application_menu/click", &m_compButton1);
+        vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/trigger/click", &m_compTriggerButtonEmulated);
+        vr::VRDriverInput()->CreateScalarComponent(m_ulPropertyContainer, "/input/trigger/value", &m_compTriggerAxis, VRScalarType_Absolute, VRScalarUnits_NormalizedOneSided);
+        vr::VRDriverInput()->CreateScalarComponent(m_ulPropertyContainer, "/input/trackpad/x", &m_compJoystickAxisX, VRScalarType_Absolute, VRScalarUnits_NormalizedTwoSided);
+        vr::VRDriverInput()->CreateScalarComponent(m_ulPropertyContainer, "/input/trackpad/y", &m_compJoystickAxisY, VRScalarType_Absolute, VRScalarUnits_NormalizedTwoSided);
+        vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/trackpad/click", &m_compJoystickButton);
+        vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/trackpad/touch", &m_compJoystickTouchEmulated);
         vr::VRDriverInput()->CreateHapticComponent(m_ulPropertyContainer, "/output/haptic", &m_compHaptic);
-        */
 
         return VRInitError_None;
     }
 
     virtual void Deactivate()
     {
-        DriverLog("CHydraHmdLatest::Deactivate: %s was object id %d\n", GetSerialNumber(), m_unObjectId);
+        DriverLog("CHydraControllerDriver::Deactivate: %s was object id %d\n", GetSerialNumber().c_str(), m_unObjectId);
         m_unObjectId = vr::k_unTrackedDeviceIndexInvalid;
     }
 
@@ -522,9 +525,10 @@ public:
         // in to UpdateBooleanComponent. This could happen in RunFrame or on a thread of your own that's reading USB
         // state. There's no need to update input state unless it changes, but it doesn't do any harm to do so.
 
-        vr::VRDriverInput()->UpdateBooleanComponent(m_compA, (0x8000 & GetAsyncKeyState('A')) != 0, 0);
-        vr::VRDriverInput()->UpdateBooleanComponent(m_compB, (0x8000 & GetAsyncKeyState('B')) != 0, 0);
-        vr::VRDriverInput()->UpdateBooleanComponent(m_compC, (0x8000 & GetAsyncKeyState('C')) != 0, 0);
+        // TODO
+        //vr::VRDriverInput()->UpdateBooleanComponent(m_compA, (0x8000 & GetAsyncKeyState('A')) != 0, 0);
+        //vr::VRDriverInput()->UpdateBooleanComponent(m_compB, (0x8000 & GetAsyncKeyState('B')) != 0, 0);
+        //vr::VRDriverInput()->UpdateBooleanComponent(m_compC, (0x8000 & GetAsyncKeyState('C')) != 0, 0);
 #endif
     }
 
@@ -551,13 +555,24 @@ private:
     vr::TrackedDeviceIndex_t m_unObjectId;
     vr::PropertyContainerHandle_t m_ulPropertyContainer;
     vr::ETrackedControllerRole m_eControllerRole;
-    vr::VRInputComponentHandle_t m_compA;
-    vr::VRInputComponentHandle_t m_compB;
-    vr::VRInputComponentHandle_t m_compC;
+
+    vr::VRInputComponentHandle_t m_compSystemButton;
+    vr::VRInputComponentHandle_t m_compJoystickButton;
+    vr::VRInputComponentHandle_t m_compJoystickTouchEmulated;
+    vr::VRInputComponentHandle_t m_compJoystickAxisX;
+    vr::VRInputComponentHandle_t m_compJoystickAxisY;
+    vr::VRInputComponentHandle_t m_compTriggerButtonEmulated;
+    vr::VRInputComponentHandle_t m_compTriggerAxis;
+    vr::VRInputComponentHandle_t m_compBumperButton;
+    vr::VRInputComponentHandle_t m_compButton1;
+    vr::VRInputComponentHandle_t m_compButton2;
+    vr::VRInputComponentHandle_t m_compButton3;
+    vr::VRInputComponentHandle_t m_compButton4;
     vr::VRInputComponentHandle_t m_compHaptic;
 
     std::string m_sSerialNumber;
     std::string m_sModelNumber;
+    std::string m_sManufacturerName;
     std::string m_sRenderModel;
 
     // Which Hydra controller
@@ -645,7 +660,7 @@ private:
     void ScanForNewControllers(bool bNotifyServer);
     void CheckForChordedSystemButtons();
     virtual uint32_t GetTrackedDeviceCount();
-    virtual vr::ITrackedDeviceServerDriver * FindTrackedDeviceDriver(const char * pchId);
+    virtual CHydraControllerDriver * FindTrackedDeviceDriver(const char * pchId);
 };
 
 CServerDriver_Hydra g_serverDriverHydra;
@@ -805,7 +820,7 @@ uint32_t CServerDriver_Hydra::GetTrackedDeviceCount()
     return m_vecControllers.size();
 }
 
-vr::ITrackedDeviceServerDriver * CServerDriver_Hydra::FindTrackedDeviceDriver(const char * pchId)
+CHydraControllerDriver * CServerDriver_Hydra::FindTrackedDeviceDriver(const char * pchId)
 {
     scope_lock lock(m_Mutex);
 
@@ -833,13 +848,20 @@ void CServerDriver_Hydra::ScanForNewControllers(bool bNotifyServer)
                     char buf[256];
                     GenerateSerialNumber(buf, sizeof(buf), base, i);
                     scope_lock lock(m_Mutex);
-                    if (!FindTrackedDeviceDriver(buf))
+
+                    CHydraControllerDriver * hydra = FindTrackedDeviceDriver(buf);
+                    if (!hydra)
                     {
                         DriverLog("added new device %s\n", buf);
-                        m_vecControllers.push_back(new CHydraControllerDriver(base, i));
-                        if (bNotifyServer)
-                        {
-                            vr::VRServerDriverHost()->TrackedDeviceAdded(m_vecControllers.back()->GetSerialNumber().c_str(), vr::TrackedDeviceClass_Controller, m_vecControllers.back());
+                        hydra = new CHydraControllerDriver(base, i);
+                        m_vecControllers.push_back(hydra);
+                    }
+
+                    if (bNotifyServer)
+                    {
+                        if (!hydra->IsActivated()) {
+                            DriverLog("activated new device %s\n", buf);
+                            vr::VRServerDriverHost()->TrackedDeviceAdded(hydra->GetSerialNumber().c_str(), vr::TrackedDeviceClass_Controller, hydra);
                         }
                     }
                 }
