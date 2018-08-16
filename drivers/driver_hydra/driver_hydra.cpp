@@ -658,11 +658,9 @@ public:
     {
     }
 
-
     virtual EVRInitError Activate(vr::TrackedDeviceIndex_t unObjectId)
     {
         DriverLog("Activated device: %s (object id %d)\n", GetSerialNumber().c_str(), unObjectId);
-
         m_unObjectId = unObjectId;
 
         g_serverDriverHydra.LaunchHydraMonitor();
@@ -911,12 +909,14 @@ EVRInitError CServerDriver_Hydra::Init(vr::IVRDriverContext *pDriverContext)
     VR_INIT_SERVER_DRIVER_CONTEXT(pDriverContext);
     InitDriverLog(vr::VRDriverLog());
 
-    // TODO
-    //m_sDriverInstallDir = pchDriverInstallDir;
-    m_sDriverInstallDir = "d:\\hydra\\hydra";
-
     if (sixenseInit() != SIXENSE_SUCCESS)
         return vr::VRInitError_Driver_Failed;
+
+    // Getting driver install dir from resource path
+    char buf[1024];
+    VRResources()->GetResourceFullPath("{hydra}", "", buf, sizeof(buf));
+    m_sDriverInstallDir = buf;
+    m_sDriverInstallDir += "..";
 
     // Will not immediately detect controllers at this point.  Sixense driver must be initializing
     // in its own thread...  It's okay to dynamically detect devices later, but if controllers are
@@ -1094,7 +1094,6 @@ void CServerDriver_Hydra::ScanForNewControllers(bool bNotifyServer)
     }
 }
 
-
 void CServerDriver_Hydra::Cleanup()
 {
     CleanupDriverLog();
@@ -1113,7 +1112,6 @@ void CServerDriver_Hydra::Cleanup()
         *it = NULL;
     }
 }
-
 
 void CServerDriver_Hydra::RunFrame()
 {
