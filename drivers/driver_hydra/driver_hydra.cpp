@@ -2,24 +2,8 @@
 
 #define WIN32_LEAN_AND_MEAN
 
-#include <openvr_driver.h>
+#include "driver_hydra.h"
 #include "driverlog.h"
-#include <vector>
-#include <thread>
-#include <chrono>
-#include <string>
-#include <mutex>
-#include <atomic>
-#include <sstream>
-#include <SDKDDKVer.h>
-#include <stdlib.h>
-#include <malloc.h>
-#include <memory.h>
-#include <tchar.h>
-#include <sixense.h>
-#include <sixense_math.hpp>
-#include <sixense_utils/derivatives.hpp>
-#include <Eigen/Geometry>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -38,6 +22,33 @@ using namespace vr;
 #else
 #error "Unsupported Platform."
 #endif
+
+CServerDriver_Hydra g_serverDriverHydra;
+
+//-----------------------------------------------------------------------------
+// Purpose: HmdDriverFactory
+//-----------------------------------------------------------------------------
+HMD_DLL_EXPORT void *HmdDriverFactory(const char *pInterfaceName, int *pReturnCode)
+{
+    if (0 == strcmp(IServerTrackedDeviceProvider_Version, pInterfaceName))
+    {
+        return &g_serverDriverHydra;
+    }
+
+    // watchdog causes problems with steamvr (endless startup loop), so it's disabled for now
+    /*
+    if (0 == strcmp(IVRWatchdogProvider_Version, pInterfaceName))
+    {
+    return &g_watchdogDriverHydra;
+    }
+    */
+
+    if (pReturnCode)
+        *pReturnCode = VRInitError_Init_InterfaceNotFound;
+
+    return NULL;
+}
+
 
 inline HmdQuaternion_t HmdQuaternion_Init(double w, double x, double y, double z)
 {
@@ -149,7 +160,7 @@ public:
             return false;
         m_ucPoseSequenceNumber = cd.sequence_number;
 
-        //UpdateTrackingState(cd); // TODO
+        UpdateTrackingState(cd);
 
         // Block all buttons until initial press confirms hemisphere
         if (WaitingForHemisphereTracking(cd))
@@ -160,6 +171,216 @@ public:
         //UpdateControllerState(cd); // TODO
 
         return true;
+    }
+
+    void UpdateTrackingState(sixenseControllerData & cd)
+    {
+        using namespace sixenseMath;
+
+        // This is very hard to know with this driver, but CServerDriver_Hydra::ThreadFunc
+        // tries to reduce latency as much as possible.  There is filtering in the Sixense SDK,
+        // though, which causes additional unknown latency.  This time is used to know how much
+        // extrapolation (via velocity and angular velocity) should be done when predicting poses.
+        m_Pose.poseTimeOffset = -0.016f;
+
+        // The "driver" coordinate system is the one that vecPosition is in.  This is whatever
+        // coordinates the driver naturally produces for position and orientation.  The "world"
+        // coordinate system is the one that is presented to vrserver.  This should include
+        // fixing any tilt to the world (caused by a tilted camera, for example) and can include
+        // any other useful transformation for the driver (e.g. the driver is tracking from a
+        // secondary camera, but uses this transform to move this object into the primary camera
+        // coordinate system to be consistent with other objects).
+        //
+        // This transform is multiplied on the left of the predicted "driver" pose.  That becomes
+        // the vr::TrackingUniverseRawAndUncalibrated origin, which is then further offset for
+        // floor height and tracking space center by the chaperone system to produce both the
+        // vr::TrackingUniverseSeated and vr::TrackingUniverseStanding spaces.
+        //
+        // In the hydra driver, we use it to unify our coordinate system with the HMD.
+        m_Pose.qWorldFromDriverRotation.w = m_WorldFromDriverRotation[3];
+        m_Pose.qWorldFromDriverRotation.x = m_WorldFromDriverRotation[0];
+        m_Pose.qWorldFromDriverRotation.y = m_WorldFromDriverRotation[1];
+        m_Pose.qWorldFromDriverRotation.z = m_WorldFromDriverRotation[2];
+        m_Pose.vecWorldFromDriverTranslation[0] = m_WorldFromDriverTranslation[0];
+        m_Pose.vecWorldFromDriverTranslation[1] = m_WorldFromDriverTranslation[1];
+        m_Pose.vecWorldFromDriverTranslation[2] = m_WorldFromDriverTranslation[2];
+
+        // The "head" coordinate system defines a natural point for the object.  While the "driver"
+        // space may be chosen for mechanical, eletrical, or mathematical convenience (e.g. being
+        // the location of the IMU), the "head" should be a point meaningful to the user.  For HMDs,
+        // it's the point directly between the user's eyes.  The origin of this coordinate system
+        // is the origin used for the rendermodel.
+        //
+        // This transform is multiplied on the right side of the "driver" pose.
+        //
+        // This transform was inadvertently left at identity for the GDC 2015 controllers, creating
+        // a defacto standard "head" position for controllers at the location of the IMU for that
+        // particular controller.  We will remedy that later by adding other, explicitly named and
+        // chosen spaces.  For now, mimicking that point in this driver lets us run content authored
+        // for the HTC Vive Developer Edition controller.  This was done by loading an existing
+        // controller rendermodel along side the Hydra model and rotating the Hydra model to roughly
+        // align the main features like the handle and trigger.
+        m_Pose.qDriverFromHeadRotation.w = 0.945519f;
+        m_Pose.qDriverFromHeadRotation.x = 0.325568f;
+        m_Pose.qDriverFromHeadRotation.y = 0.0f;
+        m_Pose.qDriverFromHeadRotation.z = 0.0f;
+        m_Pose.vecDriverFromHeadTranslation[0] = 0.000f;
+        m_Pose.vecDriverFromHeadTranslation[1] = 0.06413f;
+        m_Pose.vecDriverFromHeadTranslation[2] = -0.08695f;
+
+        // Set position
+        Vector3 pos = Vector3(cd.pos) * k_fScaleSixenseToMeters;
+        m_Pose.vecPosition[0] = pos[0];
+        m_Pose.vecPosition[1] = pos[1];
+        m_Pose.vecPosition[2] = pos[2];
+
+        // Angular acceleration: the Unity steamVR plugin only provides angular velocity 
+        // for the controller, so probably this is not too important.
+        m_Pose.vecAngularAcceleration[0] = 0.0f;
+        m_Pose.vecAngularAcceleration[1] = 0.0f;
+        m_Pose.vecAngularAcceleration[2] = 0.0f;
+
+        // Set rotational coordinates
+        m_Pose.qRotation.w = cd.rot_quat[3];
+        m_Pose.qRotation.x = cd.rot_quat[0];
+        m_Pose.qRotation.y = cd.rot_quat[1];
+        m_Pose.qRotation.z = cd.rot_quat[2];
+
+        // Update Sixense Utils data
+        m_Deriv.update(&cd);
+
+        if (!m_bEnableIMUEmulation) {
+            // The tradeoff here is that setting a valid velocity causes the controllers
+            // to jitter, but the controllers feel much more "alive" and lighter.
+            // The jitter while stationary is more annoying than the laggy feeling caused
+            // by disabling velocity (which effectively disables prediction for rendering).
+            // Even the Hydra (without IMU) could probably produce a better velocity here
+            // with a different filter on top of the raw position.  Perhaps someone feels
+            // like writing one??
+            m_Pose.vecVelocity[0] = 0.0;
+            m_Pose.vecVelocity[1] = 0.0;
+            m_Pose.vecVelocity[2] = 0.0;
+
+            // True acceleration is highly volatile, so it's not really reasonable to
+            // extrapolate much from it anyway.  Passing it as 0 from any driver should
+            // be fine.
+            m_Pose.vecAcceleration[0] = 0.0;
+            m_Pose.vecAcceleration[1] = 0.0;
+            m_Pose.vecAcceleration[2] = 0.0;
+
+            // Unmeasured.  XXX with no angular velocity, throwing might not work in some games
+            m_Pose.vecAngularVelocity[0] = 0.0;
+            m_Pose.vecAngularVelocity[1] = 0.0;
+            m_Pose.vecAngularVelocity[2] = 0.0;
+
+        }
+        else { // IMU Emulation
+
+            int updatetime_ = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - m_ControllerLastUpdateTime).count();
+
+            // Get velocity from sixense_utils
+            Vector3 vel = m_Deriv.getVelocity() * k_fScaleSixenseToMeters;
+
+            // Get acceleration from sixense_utils
+            Vector3 acc = m_Deriv.getAcceleration() * k_fScaleSixenseToMeters;
+
+            Eigen::Quaternionf rotation_ = Eigen::Quaternionf(cd.rot_quat[3], cd.rot_quat[0], cd.rot_quat[1], cd.rot_quat[2]);
+
+            if (m_bHasUpdateHistory) {
+
+                float expFactor_ = .1f; // smoothing factor
+
+                // add sixense_utils velocity with smoothing
+                m_Pose.vecVelocity[0] = expFactor_ * vel[0] + (1 - expFactor_) * m_LastVelocity[0];
+                m_Pose.vecVelocity[1] = expFactor_ * vel[1] + (1 - expFactor_) * m_LastVelocity[1];
+                m_Pose.vecVelocity[2] = expFactor_ * vel[2] + (1 - expFactor_) * m_LastVelocity[2];
+                //DriverLog("Sixense vel: %f, %f, %f \n", vel[0], vel[1], vel[2]);
+
+                // add sixense_utils acceleration with smoothing
+                m_Pose.vecAcceleration[0] = expFactor_ * acc[0] + (1 - expFactor_) * m_LastAcceleration[0];
+                m_Pose.vecAcceleration[1] = expFactor_ * acc[1] + (1 - expFactor_) * m_LastAcceleration[1];
+                m_Pose.vecAcceleration[2] = expFactor_ * acc[2] + (1 - expFactor_) * m_LastAcceleration[2];
+                //DriverLog("Sixense acc: %f, %f, %f \n", acc[0], acc[1], acc[2]);
+
+                // Calculate angular velocity
+                if (m_bEnableAngularVelocity) {
+
+                    // the angular velocity's axis of rotation is the difference of the last two quats
+                    Eigen::Quaternionf diff_ = m_ControllerLastRotation.conjugate() * rotation_;
+                    Eigen::AngleAxisf angax_ = Eigen::AngleAxisf(diff_);
+                    Eigen::Vector3f angvel_ = angax_.axis();
+
+                    // get angular distance of current rotation from last rotation
+                    float angdist_ = m_ControllerLastRotation.angularDistance(rotation_);
+
+                    // the magnitude of the special angle/axis type vector is the speed of the rotation around the axis in rad/s
+                    angvel_ = angvel_ * (angdist_ * 1000 * 1000 / updatetime_);
+
+                    // add the calculated angular velocity with smoothing applied
+                    m_Pose.vecAngularVelocity[0] = expFactor_ * angvel_.x() + (1 - expFactor_) * m_LastAngularVelocity.x();
+                    m_Pose.vecAngularVelocity[1] = expFactor_ * angvel_.y() + (1 - expFactor_) * m_LastAngularVelocity.y();
+                    m_Pose.vecAngularVelocity[2] = expFactor_ * angvel_.z() + (1 - expFactor_) * m_LastAngularVelocity.z();
+                    //DriverLog("angvel: ad: %f, x: %f, y: %f, z: %f \n", m_ControllerLastRotation.angularDistance(rotation_), angvel_.x(), angvel_.y(), angvel_.z());
+
+                    // refresh history
+                    for (int i = 0; i < 3; i++)
+                    {
+                        m_LastAngularVelocity[i] = m_Pose.vecAngularVelocity[i];
+                    }
+                }
+
+            }
+            else {
+                m_Pose.vecAcceleration[0] = .0f;
+                m_Pose.vecAcceleration[1] = .0f;
+                m_Pose.vecAcceleration[2] = .0f;
+
+                m_Pose.vecVelocity[0] = .0f;
+                m_Pose.vecVelocity[1] = .0f;
+                m_Pose.vecVelocity[2] = .0f;
+
+                m_Pose.vecAngularVelocity[0] = .0f;
+                m_Pose.vecAngularVelocity[1] = .0f;
+                m_Pose.vecAngularVelocity[2] = .0f;
+
+                m_LastAngularVelocity[0] = .0f;
+                m_LastAngularVelocity[1] = .0f;
+                m_LastAngularVelocity[2] = .0f;
+
+                m_bHasUpdateHistory = true;
+            }
+
+
+            // Refresh the history
+            m_ControllerLastUpdateTime = std::chrono::steady_clock::now();
+            m_ControllerLastRotation = rotation_;
+            for (int i = 0; i < 3; i++)
+            {
+                m_LastVelocity[i] = m_Pose.vecVelocity[i];
+                m_LastAcceleration[i] = m_Pose.vecAcceleration[i];
+            }
+        }
+
+        // Don't show user any controllers until they have hemisphere tracking and
+        // do the calibration gesture.  hydra_monitor should be prompting with an overlay
+        if (m_eHemisphereTrackingState != k_eHemisphereTrackingEnabled)
+            m_Pose.result = vr::TrackingResult_Uninitialized;
+        else if (!m_bCalibrated)
+            m_Pose.result = vr::TrackingResult_Calibrating_InProgress;
+        else
+            m_Pose.result = vr::TrackingResult_Running_OK;
+
+        m_Pose.poseIsValid = m_bCalibrated;
+        m_Pose.deviceIsConnected = true;
+
+        // These should always be false from any modern driver.  These are for Oculus DK1-like
+        // rotation-only tracking.  Support for that has likely rotted in vrserver.
+        m_Pose.willDriftInYaw = false;
+        m_Pose.shouldApplyHeadModel = false;
+
+        // This call posts this pose to shared memory, where all clients will have access to it the next
+        // moment they want to predict a pose.
+        vr::VRServerDriverHost()->TrackedDevicePoseUpdated(m_unObjectId, m_Pose, sizeof(DriverPose_t));
     }
 
     bool IsHoldingSystemButton() const
@@ -440,13 +661,13 @@ public:
 
     virtual EVRInitError Activate(vr::TrackedDeviceIndex_t unObjectId)
     {
-        DriverLog("CHydraControllerDriver::Activate: %s is object id %d\n", GetSerialNumber().c_str(), unObjectId);
+        DriverLog("Activated device: %s (object id %d)\n", GetSerialNumber().c_str(), unObjectId);
 
         m_unObjectId = unObjectId;
 
-        // TODO
-        //g_ServerTrackedDeviceProvider.LaunchHydraMonitor();
+        g_serverDriverHydra.LaunchHydraMonitor();
 
+        // Set properties
         m_ulPropertyContainer = vr::VRProperties()->TrackedDeviceToPropertyContainer(m_unObjectId);
 
         vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, Prop_ModelNumber_String, m_sModelNumber.c_str());
@@ -486,7 +707,7 @@ public:
 
     virtual void Deactivate()
     {
-        DriverLog("CHydraControllerDriver::Deactivate: %s was object id %d\n", GetSerialNumber().c_str(), m_unObjectId);
+        DriverLog("Deactivated device: %s (object id %d)\n", GetSerialNumber().c_str(), m_unObjectId);
         m_unObjectId = vr::k_unTrackedDeviceIndexInvalid;
     }
 
@@ -633,37 +854,43 @@ const float CHydraControllerDriver::k_fScaleSixenseToMeters = 0.001;  // sixense
 //-----------------------------------------------------------------------------
 // Purpose: IServerTrackedDeviceProvider
 //-----------------------------------------------------------------------------
-class CServerDriver_Hydra : public IServerTrackedDeviceProvider
+void CServerDriver_Hydra::LaunchHydraMonitor()
 {
-public:
-    CServerDriver_Hydra();
-    virtual ~CServerDriver_Hydra();
-    virtual EVRInitError Init(vr::IVRDriverContext *pDriverContext);
-    virtual void Cleanup();
-    virtual const char * const *GetInterfaceVersions() { return vr::k_InterfaceVersions; }
-    virtual void RunFrame();
-    virtual bool ShouldBlockStandbyMode() { return false; }
-    virtual void EnterStandby() {}
-    virtual void LeaveStandby() {}
+    LaunchHydraMonitor(m_sDriverInstallDir.c_str());
+}
 
-private:
-    CHydraControllerDriver *m_pControllerA = nullptr;
-    CHydraControllerDriver *m_pControllerB = nullptr;
-    std::atomic<bool> m_bStopRequested;
-    bool m_bLaunchedHydraMonitor;
-    std::thread *m_Thread;
-    std::recursive_mutex m_Mutex;
-    typedef std::lock_guard<std::recursive_mutex> scope_lock;
-    std::vector< CHydraControllerDriver * > m_vecControllers;
-    static void ThreadEntry(CServerDriver_Hydra *pDriver);
-    void ThreadFunc();
-    void ScanForNewControllers(bool bNotifyServer);
-    void CheckForChordedSystemButtons();
-    virtual uint32_t GetTrackedDeviceCount();
-    virtual CHydraControllerDriver * FindTrackedDeviceDriver(const char * pchId);
-};
+// The hydra_monitor is a companion program which can display overlay prompts for us
+// and tell us the pose of the HMD at the moment we want to calibrate.
+void CServerDriver_Hydra::LaunchHydraMonitor(const char * pchDriverInstallDir)
+{
+    if (m_bLaunchedHydraMonitor)
+        return;
 
-CServerDriver_Hydra g_serverDriverHydra;
+    m_bLaunchedHydraMonitor = true;
+
+    std::ostringstream ss;
+
+    ss << pchDriverInstallDir << "\\bin\\";
+#if defined( _WIN64 )
+    ss << "win64";
+#elif defined( _WIN32 )
+    ss << "win32";
+#else
+#error Do not know how to launch hydra_monitor
+#endif
+    DriverLog("hydra_monitor path: %s\n", ss.str().c_str());
+
+#if defined( _WIN32 )
+    STARTUPINFOA sInfoProcess = { 0 };
+    sInfoProcess.cb = sizeof(STARTUPINFOW);
+    PROCESS_INFORMATION pInfoStartedProcess;
+    BOOL okay = CreateProcessA((ss.str() + "\\hydra_monitor.exe").c_str(), NULL, NULL, NULL, FALSE, 0, NULL, ss.str().c_str(), &sInfoProcess, &pInfoStartedProcess);
+    DriverLog("start hydra_monitor okay: %d %08x\n", okay, GetLastError());
+#else
+#error Do not know how to launch hydra_monitor
+#endif
+}
+
 
 CServerDriver_Hydra::CServerDriver_Hydra():
     m_Thread(NULL), // initialize m_Thread
@@ -684,6 +911,10 @@ EVRInitError CServerDriver_Hydra::Init(vr::IVRDriverContext *pDriverContext)
     VR_INIT_SERVER_DRIVER_CONTEXT(pDriverContext);
     InitDriverLog(vr::VRDriverLog());
 
+    // TODO
+    //m_sDriverInstallDir = pchDriverInstallDir;
+    m_sDriverInstallDir = "d:\\hydra\\hydra";
+
     if (sixenseInit() != SIXENSE_SUCCESS)
         return vr::VRInitError_Driver_Failed;
 
@@ -699,11 +930,6 @@ EVRInitError CServerDriver_Hydra::Init(vr::IVRDriverContext *pDriverContext)
     }
 
     m_Thread = new std::thread(ThreadEntry, this);   // use new operator now
-
-    //m_pControllerA = new CHydraControllerDriver(0);
-    //vr::VRServerDriverHost()->TrackedDeviceAdded(m_pControllerA->GetSerialNumber().c_str(), vr::TrackedDeviceClass_Controller, m_pControllerA);
-    //m_pControllerB = new CHydraControllerDriver(1);
-    //vr::VRServerDriverHost()->TrackedDeviceAdded(m_pControllerB->GetSerialNumber().c_str(), vr::TrackedDeviceClass_Controller, m_pControllerB);
 
     return VRInitError_None;
 }
@@ -852,17 +1078,15 @@ void CServerDriver_Hydra::ScanForNewControllers(bool bNotifyServer)
                     CHydraControllerDriver * hydra = FindTrackedDeviceDriver(buf);
                     if (!hydra)
                     {
-                        DriverLog("added new device %s\n", buf);
+                        DriverLog("Enumerated device: %s\n", buf);
                         hydra = new CHydraControllerDriver(base, i);
                         m_vecControllers.push_back(hydra);
                     }
 
-                    if (bNotifyServer)
+                    if (bNotifyServer && !hydra->IsActivated())
                     {
-                        if (!hydra->IsActivated()) {
-                            DriverLog("activated new device %s\n", buf);
-                            vr::VRServerDriverHost()->TrackedDeviceAdded(hydra->GetSerialNumber().c_str(), vr::TrackedDeviceClass_Controller, hydra);
-                        }
+                        DriverLog("Activating device: %s\n", buf);
+                        vr::VRServerDriverHost()->TrackedDeviceAdded(hydra->GetSerialNumber().c_str(), vr::TrackedDeviceClass_Controller, hydra);
                     }
                 }
             }
@@ -908,26 +1132,3 @@ void CServerDriver_Hydra::RunFrame()
     }
 }
 
-//-----------------------------------------------------------------------------
-// Purpose: HmdDriverFactory
-//-----------------------------------------------------------------------------
-HMD_DLL_EXPORT void *HmdDriverFactory(const char *pInterfaceName, int *pReturnCode)
-{
-    if (0 == strcmp(IServerTrackedDeviceProvider_Version, pInterfaceName))
-    {
-        return &g_serverDriverHydra;
-    }
-
-    // watchdog causes problems with steamvr (endless startup loop), so it's disabled for now
-    /*
-    if (0 == strcmp(IVRWatchdogProvider_Version, pInterfaceName))
-    {
-        return &g_watchdogDriverHydra;
-    }
-    */
-
-    if (pReturnCode)
-        *pReturnCode = VRInitError_Init_InterfaceNotFound;
-
-    return NULL;
-}

@@ -12,6 +12,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="driverlog.h" />
+    <ClInclude Include="driver_hydra.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\README.md">

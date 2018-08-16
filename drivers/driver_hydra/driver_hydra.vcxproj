@@ -256,6 +256,7 @@ move /y "$(InstallDir)\hydra\resources\driver.vrdrivermanifest" "$(InstallDir)\d
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="driverlog.h" />
+    <ClInclude Include="driver_hydra.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="driverlog.cpp" />
