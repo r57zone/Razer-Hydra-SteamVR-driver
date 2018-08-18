@@ -378,18 +378,21 @@ public:
         //vr::VRProperties()->SetInt32Property(m_ulPropertyContainer, Prop_ControllerRoleHint_Int32, TrackedControllerRole_RightHand);
 
         // TODO
-        vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, Prop_InputProfilePath_String, "{hydra}/input/hydra_controller_profile.json");
+        vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, Prop_InputProfilePath_String, "{hydra}/input/hydra_profile.json");
 
         // create all the input components
-        vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/system/click", &m_compSystemButton);
-        vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/grip/click", &m_compBumperButton);
-        vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/application_menu/click", &m_compButton4);
-        vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/trigger/click", &m_compTriggerButtonEmulated);
-        vr::VRDriverInput()->CreateScalarComponent(m_ulPropertyContainer, "/input/trigger/value", &m_compTriggerAxis, VRScalarType_Absolute, VRScalarUnits_NormalizedOneSided);
-        vr::VRDriverInput()->CreateScalarComponent(m_ulPropertyContainer, "/input/trackpad/x", &m_compJoystickAxisX, VRScalarType_Absolute, VRScalarUnits_NormalizedTwoSided);
-        vr::VRDriverInput()->CreateScalarComponent(m_ulPropertyContainer, "/input/trackpad/y", &m_compJoystickAxisY, VRScalarType_Absolute, VRScalarUnits_NormalizedTwoSided);
-        vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/trackpad/click", &m_compJoystickButton);
-        vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/trackpad/touch", &m_compJoystickTouch);
+        vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/system/click", &m_compStart);
+        vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/grip/click", &m_compBumper);
+        vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/button1/click", &m_compButton1);
+        vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/button2/click", &m_compButton2);
+        vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/button3/click", &m_compButton3);
+        vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/button4/click", &m_compButton4);
+        //vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/trigger/click", &m_compTriggerButtonEmulated);
+        vr::VRDriverInput()->CreateScalarComponent(m_ulPropertyContainer, "/input/trigger/value", &m_compTrigger, VRScalarType_Absolute, VRScalarUnits_NormalizedOneSided);
+        vr::VRDriverInput()->CreateScalarComponent(m_ulPropertyContainer, "/input/joystick/x", &m_compJoystickAxisX, VRScalarType_Absolute, VRScalarUnits_NormalizedTwoSided);
+        vr::VRDriverInput()->CreateScalarComponent(m_ulPropertyContainer, "/input/joystick/y", &m_compJoystickAxisY, VRScalarType_Absolute, VRScalarUnits_NormalizedTwoSided);
+        vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/joystick/click", &m_compJoystickButton);
+        vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/joystick/touch", &m_compJoystickTouch);
         vr::VRDriverInput()->CreateHapticComponent(m_ulPropertyContainer, "/output/haptic", &m_compHaptic);
 
         return VRInitError_None;
@@ -462,14 +465,14 @@ private:
     vr::PropertyContainerHandle_t m_ulPropertyContainer;
     vr::ETrackedControllerRole m_eControllerRole;
 
-    vr::VRInputComponentHandle_t m_compSystemButton;
+    vr::VRInputComponentHandle_t m_compStart;
     vr::VRInputComponentHandle_t m_compJoystickButton;
     vr::VRInputComponentHandle_t m_compJoystickTouch;
     vr::VRInputComponentHandle_t m_compJoystickAxisX;
     vr::VRInputComponentHandle_t m_compJoystickAxisY;
-    vr::VRInputComponentHandle_t m_compTriggerButtonEmulated;
-    vr::VRInputComponentHandle_t m_compTriggerAxis;
-    vr::VRInputComponentHandle_t m_compBumperButton;
+    //vr::VRInputComponentHandle_t m_compTriggerButtonEmulated;
+    vr::VRInputComponentHandle_t m_compTrigger;
+    vr::VRInputComponentHandle_t m_compBumper;
     vr::VRInputComponentHandle_t m_compButton1;
     vr::VRInputComponentHandle_t m_compButton2;
     vr::VRInputComponentHandle_t m_compButton3;
@@ -515,7 +518,7 @@ private:
     static const std::chrono::milliseconds k_SystemButtonPulsingDuration;
 
     typedef void (vr::IVRServerDriverHost::*ButtonUpdate)(uint32_t unWhichDevice, vr::EVRButtonId eButtonId, double eventTimeOffset);
-    void SendButtonUpdates(ButtonUpdate ButtonEvent, uint64_t ulMask);
+    //void SendButtonUpdates(ButtonUpdate ButtonEvent, uint64_t ulMask);
 
 
     // IMU emulation things
@@ -538,8 +541,11 @@ private:
         /**
         * Handling button presses for the user switchable features go here,
         * before the driver state is updated.
+        * 
+        * 18/08/18 - Developer mode removed, because we want to forward all
+        * button presses to the new input system from now on
         */
-
+        /*
         // Developer mode
         if (m_bEnableDeveloperMode) {
             // Button 1 toggles imu emulation
@@ -552,33 +558,44 @@ private:
                 m_bEnableAngularVelocity = !m_bEnableAngularVelocity;
             }
         }
+        */
 
-        // "Hold Thumbpad" mode removes the joystick deadzone while Button 3 is pressed.
-        // This is needed for full compatibility with the Vive's trackpad.
+        /**
+         * "Hold Thumbpad" mode removes the joystick deadzone while Button 3 is pressed.
+         * This is needed for full compatibility with the Vive's trackpad.
+         * 
+         * 18/08/18 - I disable this for now, we'll see if it's still needed with the new input system
+         */
         float effectiveJoyDeadzone = m_fJoystickDeadzone;
+        /*
         bool holdingThumbpad = false;
         if (m_bEnableHoldThumbpad && (cd.buttons & SIXENSE_BUTTON_3)) {
             effectiveJoyDeadzone = -1.0f;
             bool holdingThumbpad = true;
         }
+        */
 
         /**
         * Update input components
         */
-        // app menu button
+        // numbered buttons
+        vr::VRDriverInput()->UpdateBooleanComponent(m_compButton1, cd.buttons & SIXENSE_BUTTON_1, 0);
+        vr::VRDriverInput()->UpdateBooleanComponent(m_compButton2, cd.buttons & SIXENSE_BUTTON_2, 0);
+        vr::VRDriverInput()->UpdateBooleanComponent(m_compButton3, cd.buttons & SIXENSE_BUTTON_3, 0);
         vr::VRDriverInput()->UpdateBooleanComponent(m_compButton4, cd.buttons & SIXENSE_BUTTON_4, 0);
 
-        // grip button
-        vr::VRDriverInput()->UpdateBooleanComponent(m_compBumperButton, cd.buttons & SIXENSE_BUTTON_BUMPER, 0);
+        // bumper button
+        vr::VRDriverInput()->UpdateBooleanComponent(m_compBumper, cd.buttons & SIXENSE_BUTTON_BUMPER, 0);
 
-        // system button
-        vr::VRDriverInput()->UpdateBooleanComponent(m_compSystemButton, cd.buttons & SIXENSE_BUTTON_START, 0);
+        // start button
+        vr::VRDriverInput()->UpdateBooleanComponent(m_compStart, cd.buttons & SIXENSE_BUTTON_START, 0);
 
         // trigger axis
-        vr::VRDriverInput()->UpdateScalarComponent(m_compTriggerAxis, cd.trigger, 0);
+        vr::VRDriverInput()->UpdateScalarComponent(m_compTrigger, cd.trigger, 0);
 
         // trigger button
-        vr::VRDriverInput()->UpdateBooleanComponent(m_compTriggerButtonEmulated, cd.trigger > 0.8f, 0);
+        // TODO?
+        //vr::VRDriverInput()->UpdateBooleanComponent(m_compTriggerButtonEmulated, cd.trigger > 0.8f, 0);
 
         // joystick button
         vr::VRDriverInput()->UpdateBooleanComponent(m_compJoystickButton, cd.buttons & SIXENSE_BUTTON_JOYSTICK, 0);
