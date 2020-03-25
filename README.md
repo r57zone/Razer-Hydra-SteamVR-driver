@@ -14,6 +14,7 @@ For more detailed instructions please visit the [wiki](https://github.com/betavr
 
 ## Building
 
-1. [Download "openvr"](https://github.com/ValveSoftware/openvr) and unpack to "C:\openvr".
-2. [Download "SixenseSDK_102215.zip"](https://github.com/r57zone/steamvr_driver_hydra/releases) and unpack to "C:\SixenseSDK_102215".
-3. [Download Microsoft Visual Studio Code 2017](https://code.visualstudio.com/download) and compile.
+1. Download sources from [branch "steamvr_input_new"](https://github.com/r57zone/steamvr_driver_hydra/tree/r/steamvr_input_new) and unpack.
+2. [Download "openvr"](https://github.com/ValveSoftware/openvr) and unpack to "C:\openvr".
+3. [Download "SixenseSDK_102215.zip"](https://github.com/r57zone/steamvr_driver_hydra/releases) and unpack to "C:\SixenseSDK_102215".
+4. [Download Microsoft Visual Studio Code 2017](https://code.visualstudio.com/download) and compile.
