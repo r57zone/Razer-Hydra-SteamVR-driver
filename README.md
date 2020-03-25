@@ -1,22 +1,19 @@
+[![EN](https://user-images.githubusercontent.com/9499881/33184537-7be87e86-d096-11e7-89bb-f3286f752bc6.png)](https://github.com/r57zone/steamvr_driver_hydra) 
+[![RU](https://user-images.githubusercontent.com/9499881/27683795-5b0fbac6-5cd8-11e7-929c-057833e01fb1.png)](https://github.com/r57zone/steamvr_driver_hydra/blob/master/README.RU.md) 
 # Razer Hydra Driver for SteamVR
-
-[![Join the chat at https://gitter.im/betavr/steamvr_driver_hydra](https://badges.gitter.im/betavr/steamvr_driver_hydra.svg)](https://gitter.im/betavr/steamvr_driver_hydra?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+The driver emulates HTC Vive controllers.
 
 ## Installation
 
-You can download the latest executable installer (steamvr_hydra_driver_vx.x.x.x.zip) from:
-https://github.com/betavr/steamvr_driver_hydra/releases/latest
+1. [Download](https://github.com/r57zone/steamvr_driver_hydra/releases/) the latest driver.
+2. Unpack archive to "..\Steam\steamapps\common\SteamVR\drivers".
+3. [Add option] `"activateMultipleDrivers" : true,` (https://youtu.be/QCA3m4_3IJM?t=197) to config "steamvr.vrsettings", to "steamvr" section.
+4. Change the dead zone if your stick goes to the side in config (..\Steam\steamapps\common\SteamVR\drivers\razer_hydra\hydra\resources\settings\default.vrsettings), option "joystickdeadzone".
 
-For more detailed instructions please visit the wiki:
-https://github.com/betavr/steamvr_driver_hydra/wiki
-
-## Features
-
-- IMU emulation can be toggled with BUTTON 1 on each controller, which enables the user to throw stuff. Since it causes a considerable amount of jitter, it is off by default.
-- IMU emulation now also has angular velocity support. This means you can put a spin on objects. It can be toggled with BUTTON 2 when IMU emulation is active, and is enabled by default.
-
+For more detailed instructions please visit the [wiki](https://github.com/betavr/steamvr_driver_hydra/wiki).
 
 ## Building
 
-To build the driver follow the instructions of our parent project:
-https://github.com/ValveSoftware/driver_hydra
+1. [Download "openvr"](https://github.com/ValveSoftware/openvr) and unpack to "C:\openvr".
+2. [Download "SixenseSDK_102215.zip"](https://github.com/r57zone/steamvr_driver_hydra/releases) and unpack to "C:\SixenseSDK_102215".
+3. [Download Microsoft Visual Studio Code 2017](https://code.visualstudio.com/download) and compile.
