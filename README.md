@@ -7,7 +7,7 @@ The driver emulates HTC Vive controllers.
 
 1. [Download](https://github.com/r57zone/steamvr_driver_hydra/releases/) the latest driver.
 2. Unpack archive to "..\Steam\steamapps\common\SteamVR\drivers".
-3. [Add option] `"activateMultipleDrivers" : true,` (https://youtu.be/QCA3m4_3IJM?t=197) to config "steamvr.vrsettings", to "steamvr" section.
+3. [Add option](https://youtu.be/QCA3m4_3IJM?t=197) `"activateMultipleDrivers" : true,` to config "steamvr.vrsettings", to "steamvr" section.
 4. Change the dead zone if your stick goes to the side in config (..\Steam\steamapps\common\SteamVR\drivers\razer_hydra\hydra\resources\settings\default.vrsettings), option "joystickdeadzone".
 
 For more detailed instructions please visit the [wiki](https://github.com/betavr/steamvr_driver_hydra/wiki).

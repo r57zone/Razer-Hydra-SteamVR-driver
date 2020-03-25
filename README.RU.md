@@ -7,7 +7,7 @@
 
 1. [Загрузите](https://github.com/r57zone/steamvr_driver_hydra/releases/) последний драйвер.
 2. Распакуйте архив в "..\Steam\steamapps\common\SteamVR\drivers".
-3. [Добавьте параметр] `"activateMultipleDrivers" : true,` (https://youtu.be/QCA3m4_3IJM?t=197) в конфиг "steamvr.vrsettings", в раздел "steamvr".
+3. [Добавьте параметр](https://youtu.be/QCA3m4_3IJM?t=197) `"activateMultipleDrivers" : true,` в конфиг "steamvr.vrsettings", в раздел "steamvr".
 4. Измените мертвую зону если ваш стик уходит в сторону, в конфиге (..\Steam\steamapps\common\SteamVR\drivers\razer_hydra\hydra\resources\settings\default.vrsettings), параметр "joystickdeadzone".
 
 Дополнительная информация есть в [вики](https://github.com/betavr/steamvr_driver_hydra/wiki).
