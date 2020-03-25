@@ -360,10 +360,11 @@ public:
         // Set properties
         m_ulPropertyContainer = vr::VRProperties()->TrackedDeviceToPropertyContainer(m_unObjectId);
 
-        vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, Prop_ModelNumber_String, m_sModelNumber.c_str());
+		vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_ModelNumber_String, "ViveMV"); //m_sModelNumber.c_str()
         vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, Prop_SerialNumber_String, m_sSerialNumber.c_str());
-        vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, Prop_RenderModelName_String, m_sRenderModel.c_str());
-        vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, Prop_ManufacturerName_String, m_sManufacturerName.c_str());
+		vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_ControllerType_String, "vive_controller");
+		vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_RenderModelName_String, "vr_controller_vive_1_5"); //m_sRenderModel.c_str()
+		vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_ManufacturerName_String, "HTC"); //m_sManufacturerName.c_str()
         vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, Prop_TrackingFirmwareVersion_String, "cd.firmware_revision=" + m_firmware_revision);
         vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, Prop_HardwareRevision_String, "cd.hardware_revision=" + m_hardware_revision);
         vr::VRProperties()->SetUint64Property(m_ulPropertyContainer, Prop_FirmwareVersion_Uint64, m_firmware_revision);
@@ -380,20 +381,21 @@ public:
         // TODO
         vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, Prop_InputProfilePath_String, "{hydra}/input/hydra_profile.json");
 
-        // create all the input components
-        vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/system/click", &m_compStart);
-        vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/grip/click", &m_compBumper);
-        vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/button1/click", &m_compButton1);
-        vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/button2/click", &m_compButton2);
-        vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/button3/click", &m_compButton3);
-        vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/button4/click", &m_compButton4);
-        //vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/trigger/click", &m_compTriggerButtonEmulated);
-        vr::VRDriverInput()->CreateScalarComponent(m_ulPropertyContainer, "/input/trigger/value", &m_compTrigger, VRScalarType_Absolute, VRScalarUnits_NormalizedOneSided);
-        vr::VRDriverInput()->CreateScalarComponent(m_ulPropertyContainer, "/input/joystick/x", &m_compJoystickAxisX, VRScalarType_Absolute, VRScalarUnits_NormalizedTwoSided);
-        vr::VRDriverInput()->CreateScalarComponent(m_ulPropertyContainer, "/input/joystick/y", &m_compJoystickAxisY, VRScalarType_Absolute, VRScalarUnits_NormalizedTwoSided);
-        vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/joystick/click", &m_compJoystickButton);
-        vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/joystick/touch", &m_compJoystickTouch);
-        vr::VRDriverInput()->CreateHapticComponent(m_ulPropertyContainer, "/output/haptic", &m_compHaptic);
+		vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/system/click", &m_compStart);
+		vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/grip/click", &m_compBumper);
+		
+		vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/button1/click", &m_compButton1);
+		vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/button2/click", &m_compButton2);
+		vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/button3/click", &m_compButton3);
+	
+		vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/application_menu/click", &m_compButton4);
+		//vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/trigger/click", &m_compTriggerButtonEmulated);
+		vr::VRDriverInput()->CreateScalarComponent(m_ulPropertyContainer, "/input/trigger/value", &m_compTrigger, vr::EVRScalarType::VRScalarType_Absolute, vr::EVRScalarUnits::VRScalarUnits_NormalizedOneSided);
+		vr::VRDriverInput()->CreateScalarComponent(m_ulPropertyContainer, "/input/trackpad/x", &m_compJoystickAxisX, vr::VRScalarType_Absolute, vr::VRScalarUnits_NormalizedTwoSided);
+		vr::VRDriverInput()->CreateScalarComponent(m_ulPropertyContainer, "/input/trackpad/y", &m_compJoystickAxisY, vr::VRScalarType_Absolute, vr::VRScalarUnits_NormalizedTwoSided);
+		vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/trackpad/click", &m_compJoystickButton);
+		vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/trackpad/touch", &m_compJoystickTouch);
+		vr::VRDriverInput()->CreateHapticComponent(m_ulPropertyContainer, "/output/haptic", &m_compHaptic);
 
         return VRInitError_None;
     }
