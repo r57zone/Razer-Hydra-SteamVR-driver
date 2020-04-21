@@ -3,12 +3,31 @@
 # Razer Hydra Driver для SteamVR
 Драйвер эмулирует HTC Vive контроллеры.
 
+## Кнопки
+Vive контроллер | Razer Hydra
+------------ | -------------
+Системная кнопка | Средняя кнопка
+Кнопка меню | Кнопка 4
+Кнопка захвата | Бампер
+Нажатие тачпада | Нажатие джойстика
+
+
+В некоторых играх неудобно нажимать Joystick, но это можно отредактировать в SteamVR Bindings UI, если перейти в настройки SteamVR, нажать "Advance Settings" -> "Show" и перейти пункт контроллеры.
+
+### Действие
+Описание | Razer Hydra кнопка
+------------ | -------------
+Присесть | Кнопка 3
+
+
+Для HMD можно использовать любой драйвер с поддержкой приседания по кнопке (кнопка настраивается). Например, можно использовать [TrueOpenVR и SteamVR мост драйвер](https://github.com/TrueOpenVR) для HMD (FreeTrack для HMD из смартфонов или ArduinoHMD для [полноценных DIY шлемов](https://github.com/TrueOpenVR/TrueOpenVR-DIY/blob/master/HMD/HMD.RU.md)). Во время нажатия кнопки 3, на Razer Hydra, также нажимается кнопка (кнопка настраивается). Настройки приседания можно найти в конфигурационном файле "default.vrsettings".
+
 ## Установка
 
 1. [Загрузите](https://github.com/r57zone/steamvr_driver_hydra/releases/) последний драйвер.
 2. Распакуйте архив в "..\Steam\steamapps\common\SteamVR\drivers".
 3. [Добавьте параметр](https://youtu.be/QCA3m4_3IJM?t=197) `"activateMultipleDrivers" : true,` в конфиг "steamvr.vrsettings", в раздел "steamvr".
-4. Измените мертвую зону если ваш стик уходит в сторону, в конфиге (..\Steam\steamapps\common\SteamVR\drivers\razer_hydra\hydra\resources\settings\default.vrsettings), параметр "joystickdeadzone".
+4. Измените мертвую зону если ваш стик уходит в сторону, в конфиге (..\Steam\steamapps\common\SteamVR\drivers\razer_hydra\hydra\resources\settings\default.vrsettings), параметр "JoyStickDeadZone".
 
 Дополнительная информация есть в [вики](https://github.com/betavr/steamvr_driver_hydra/wiki).
 

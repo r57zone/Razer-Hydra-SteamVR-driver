@@ -3,6 +3,25 @@
 # Razer Hydra Driver for SteamVR
 The driver emulates HTC Vive controllers.
 
+## Buttons
+Vive controller | Razer hydra
+------------ | -------------
+System button | Middle button
+Application menu button | Button 4
+Grip button | Bumper
+Touchpad button | Joystick button
+
+
+In some games, it is inconvenient to click Joystick, but this can be edited in SteamVR Bindings UI, if you go to the SteamVR settings, click "Advance Settings" -> "Show" and go to the controllers item.
+
+### Action
+Description | Razer Hydra Button
+------------ | -------------
+Sit down | Button 3
+
+
+For HMD, you can use any driver that supports button squats (the button is configurable). For example, you can use the [TrueOpenVR and SteamVR bridge driver](https://github.com/TrueOpenVR) for HMD (FreeTrack for HMD from smartphones or ArduinoHMD for [full-fledged DIY HMD](https://github.com/TrueOpenVR/TrueOpenVR-DIY/blob/master/HMD/HMD.md)). While pressing button 3, on the Razer Hydra, the button is also pressed (the button is configurable). Squat settings can be found in the configuration file "default.vrsettings".
+
 ## Installation
 
 1. [Download](https://github.com/r57zone/steamvr_driver_hydra/releases/) the latest driver.
