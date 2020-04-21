@@ -20,7 +20,7 @@ Vive контроллер | Razer Hydra
 Присесть | Кнопка 3
 
 
-Для HMD можно использовать любой драйвер с поддержкой приседания по кнопке (кнопка настраивается). Например, можно использовать [TrueOpenVR и SteamVR мост драйвер](https://github.com/TrueOpenVR) для HMD (FreeTrack для HMD из смартфонов или ArduinoHMD для [полноценных DIY шлемов](https://github.com/TrueOpenVR/TrueOpenVR-DIY/blob/master/HMD/HMD.RU.md)). Во время нажатия кнопки 3, на Razer Hydra, также нажимается кнопка (кнопка настраивается). Настройки приседания можно найти в конфигурационном файле "default.vrsettings".
+Для HMD можно использовать любой драйвер с поддержкой приседания по кнопке. Например, можно использовать [TrueOpenVR и SteamVR мост драйвер](https://github.com/TrueOpenVR) для HMD (FreeTrack для HMD из смартфонов или ArduinoHMD для [полноценных DIY шлемов](https://github.com/TrueOpenVR/TrueOpenVR-DIY/blob/master/HMD/HMD.RU.md)). Во время нажатия кнопки 3, на Razer Hydra, также нажимается кнопка клавиатуры (кнопка настраивается). Настройки приседания можно найти в конфигурационном файле "default.vrsettings".
 
 ## Установка
 

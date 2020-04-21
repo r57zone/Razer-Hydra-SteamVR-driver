@@ -20,7 +20,7 @@ Description | Razer Hydra Button
 Sit down | Button 3
 
 
-For HMD, you can use any driver that supports button squats (the button is configurable). For example, you can use the [TrueOpenVR and SteamVR bridge driver](https://github.com/TrueOpenVR) for HMD (FreeTrack for HMD from smartphones or ArduinoHMD for [full-fledged DIY HMD](https://github.com/TrueOpenVR/TrueOpenVR-DIY/blob/master/HMD/HMD.md)). While pressing button 3, on the Razer Hydra, the button is also pressed (the button is configurable). Squat settings can be found in the configuration file "default.vrsettings".
+For HMD can use any driver that supports button squats. For example can use the [TrueOpenVR and SteamVR bridge driver](https://github.com/TrueOpenVR) for HMD (FreeTrack for HMD from smartphones or ArduinoHMD for [full-fledged DIY HMD](https://github.com/TrueOpenVR/TrueOpenVR-DIY/blob/master/HMD/HMD.md)). While pressing button 3 on the Razer Hydra the keyboard button is pressed (the button is configurable). Sit down settings can be found in the configuration file "default.vrsettings".
 
 ## Installation
 
