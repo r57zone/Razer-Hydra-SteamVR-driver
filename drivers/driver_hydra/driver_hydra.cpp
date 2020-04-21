@@ -62,10 +62,14 @@ inline HmdQuaternion_t HmdQuaternion_Init(double w, double x, double y, double z
 
 // keys for use with the settings API
 static const char * const k_pch_Hydra_Section = "hydra";
-static const char * const k_pch_Hydra_RenderModel_String = "rendermodel";
-static const char * const k_pch_Hydra_EnableIMU_Bool = "enableimu";
-static const char * const k_pch_Hydra_EnableDeveloperMode_Bool = "enabledevelopermode";
-static const char * const k_pch_Hydra_JoystickDeadzone_Float = "joystickdeadzone";
+//static const char * const k_pch_Hydra_RenderModel_String = "rendermodel";
+static const char * const k_pch_Hydra_EnableIMU_Bool = "EnableImu";
+static const char * const k_pch_Hydra_EnableDeveloperMode_Bool = "EnableDeveloperMode";
+static const char * const k_pch_Hydra_JoystickDeadzone_Float = "JoyStickDeadZone";
+static const char * const k_pch_Hydra_SitDownPressKey_Int32 = "SitDownPressKey";
+static const char * const k_pch_Hydra_SitDownOffset_Float = "SitDownOffset";
+float PosZOffset = 0;
+int SecondCtrlButtons = 0;
 
 static void GenerateSerialNumber(char *p, int psize, int base, int controller)
 {
@@ -329,8 +333,8 @@ public:
         DriverLog("Using settings values\n");
 
         // assign rendermodel
-        vr::VRSettings()->GetString(k_pch_Hydra_Section, k_pch_Hydra_RenderModel_String, buf, sizeof(buf));
-        m_sRenderModel = buf;
+        //vr::VRSettings()->GetString(k_pch_Hydra_Section, k_pch_Hydra_RenderModel_String, buf, sizeof(buf));
+        //m_sRenderModel = buf;
 
         // enable IMU emulation
         m_bEnableIMUEmulation = vr::VRSettings()->GetBool(k_pch_Hydra_Section, k_pch_Hydra_EnableIMU_Bool);
@@ -344,6 +348,12 @@ public:
 
         // "Hold Thumbpad" mode (not user configurable)
         m_bEnableHoldThumbpad = true;
+
+		// Sit down key code (for send to another HMD drivers)
+		m_nSitDownPressKey = vr::VRSettings()->GetInt32(k_pch_Hydra_Section, k_pch_Hydra_SitDownPressKey_Int32);
+
+		// Sit down offset Z
+		m_fSitDownOffset = vr::VRSettings()->GetFloat(k_pch_Hydra_Section, k_pch_Hydra_SitDownOffset_Float);
     }
 
     virtual ~CHydraControllerDriver()
@@ -484,7 +494,7 @@ private:
     std::string m_sSerialNumber;
     std::string m_sModelNumber;
     std::string m_sManufacturerName;
-    std::string m_sRenderModel;
+    //std::string m_sRenderModel;
 
     // Which Hydra controller
     int m_nBase;
@@ -538,6 +548,9 @@ private:
     bool m_bEnableDeveloperMode;
     float m_fJoystickDeadzone;
 
+	int32_t m_nSitDownPressKey;
+	float m_fSitDownOffset;
+
     void UpdateControllerState(sixenseControllerData & cd)
     {
         /**
@@ -561,6 +574,23 @@ private:
             }
         }
         */
+
+		//Sit down
+		if (cd.buttons & SIXENSE_BUTTON_3)
+		{
+			PosZOffset = m_fSitDownOffset;
+			keybd_event(m_nSitDownPressKey, 0x45, KEYEVENTF_EXTENDEDKEY | 0, 0); //Key down
+		}
+
+		//If both controllers do not have a pressed button, then return the position
+		if (!(cd.buttons & SIXENSE_BUTTON_3) && !(SecondCtrlButtons & SIXENSE_BUTTON_3)) {
+			keybd_event(m_nSitDownPressKey, 0x45, KEYEVENTF_EXTENDEDKEY | KEYEVENTF_KEYUP, 0); //Key up
+			PosZOffset = 0;
+		}
+
+		//Save last button on second controller
+		SecondCtrlButtons = cd.buttons;
+
 
         /**
          * "Hold Thumbpad" mode removes the joystick deadzone while Button 3 is pressed.
@@ -675,7 +705,7 @@ private:
         // Set position
         Vector3 pos = Vector3(cd.pos) * k_fScaleSixenseToMeters;
         m_Pose.vecPosition[0] = pos[0];
-        m_Pose.vecPosition[1] = pos[1];
+		m_Pose.vecPosition[1] = pos[1] - PosZOffset; //Sit down;
         m_Pose.vecPosition[2] = pos[2];
 
         // Angular acceleration: the Unity steamVR plugin only provides angular velocity 
