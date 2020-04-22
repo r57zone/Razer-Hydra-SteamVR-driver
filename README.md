@@ -24,7 +24,7 @@ For HMD can use any driver that supports button crouch. Can use the [TrueOpenVR 
 
 ## Installation
 
-1. Download](https://github.com/r57zone/steamvr_driver_hydra/releases/) the latest driver.
+1. [Download](https://github.com/r57zone/steamvr_driver_hydra/releases/) the latest driver.
 2. Unpack archive to "..\Steam\steamapps\common\SteamVR\drivers".
 3. [Add option](https://youtu.be/QCA3m4_3IJM?t=197) `"activateMultipleDrivers" : true,` to config "steamvr.vrsettings", to "steamvr" section.
 4. Change the dead zone if your stick goes to the side in config (..\Steam\steamapps\common\SteamVR\drivers\razer_hydra\hydra\resources\settings\default.vrsettings), option "joystickdeadzone".
