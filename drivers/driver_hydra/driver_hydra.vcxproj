@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -25,31 +25,31 @@
     <RootNamespace>driver_hydra</RootNamespace>
     <DefaultLanguage>en-US</DefaultLanguage>
     <MinimumVisualStudioVersion>12.0</MinimumVisualStudioVersion>
-    <TargetPlatformVersion>8.1</TargetPlatformVersion>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <TargetPlatformVersion>10.0.17763.0</TargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -122,11 +122,12 @@
       </Outputs>
     </CustomBuildStep>
     <PostBuildEvent>
-      <Command>mkdir "$(InstallDir)\bin\$(Platform)"
-copy $(OutDir)$(TargetName)$(TargetExt) "$(InstallDir)\bin\$(Platform)"
-copy "$(SixenseSDKDir)\bin\$(Platform)\VS2015\$(Configuration)_dll\*" "$(InstallDir)\bin\$(Platform)"
+      <Command>mkdir "$(InstallDir)\hydra\bin\$(Platform)"
+copy $(OutDir)$(TargetName)$(TargetExt) "$(InstallDir)\hydra\bin\$(Platform)"
+copy "$(SixenseSDKDir)\bin\$(Platform)\VS2015\$(Configuration)_dll\*" "$(InstallDir)\hydra\bin\$(Platform)"
 "$(SteamVRRuntimeDir)\bin\win32\vrpathreg" adddriver "$(InstallDir)"
-xcopy /s /i /y "$(SolutionDir)\resources" "$(InstallDir)\resources"
+xcopy /s /i /y "$(SolutionDir)\resources" "$(InstallDir)\hydra\resources"
+move /y "$(InstallDir)\hydra\resources\driver.vrdrivermanifest" "$(InstallDir)\driver.vrdrivermanifest"
 </Command>
     </PostBuildEvent>
     <PostBuildEvent>
@@ -157,11 +158,12 @@ xcopy /s /i /y "$(SolutionDir)\resources" "$(InstallDir)\resources"
       </Outputs>
     </CustomBuildStep>
     <PostBuildEvent>
-      <Command>mkdir "$(InstallDir)\bin\$(Platform)"
-copy $(OutDir)$(TargetName)$(TargetExt) "$(InstallDir)\bin\$(Platform)"
-copy "$(SixenseSDKDir)\bin\$(Platform)\VS2015\$(Configuration)_dll\*" "$(InstallDir)\bin\$(Platform)"
+      <Command>mkdir "$(InstallDir)\hydra\bin\$(Platform)"
+copy $(OutDir)$(TargetName)$(TargetExt) "$(InstallDir)\hydra\bin\$(Platform)"
+copy "$(SixenseSDKDir)\bin\$(Platform)\VS2015\$(Configuration)_dll\*" "$(InstallDir)\hydra\bin\$(Platform)"
 "$(SteamVRRuntimeDir)\bin\win32\vrpathreg" adddriver "$(InstallDir)"
-xcopy /s /i /y "$(SolutionDir)\resources" "$(InstallDir)\resources"
+xcopy /s /i /y "$(SolutionDir)\resources" "$(InstallDir)\hydra\resources"
+move /y "$(InstallDir)\hydra\resources\driver.vrdrivermanifest" "$(InstallDir)\driver.vrdrivermanifest"
 </Command>
     </PostBuildEvent>
     <PostBuildEvent>
@@ -210,12 +212,13 @@ xcopy /s /i /y "$(SolutionDir)\resources" "$(InstallDir)\resources"
       <Message />
     </CustomBuildStep>
     <PostBuildEvent>
-      <Command>mkdir "$(InstallDir)\bin\$(Platform)"
-copy $(OutDir)$(TargetName)$(TargetExt) "$(InstallDir)\bin\$(Platform)"
-copy "$(SixenseSDKDir)\bin\$(Platform)\VS2015\$(Configuration)_dll\*" "$(InstallDir)\bin\$(Platform)"
+      <Command>mkdir "$(InstallDir)\hydra\bin\$(Platform)"
+copy $(OutDir)$(TargetName)$(TargetExt) "$(InstallDir)\hydra\bin\$(Platform)"
+copy "$(SixenseSDKDir)\bin\$(Platform)\VS2015\$(Configuration)_dll\*" "$(InstallDir)\hydra\bin\$(Platform)"
 "$(SteamVRRuntimeDir)\bin\win32\vrpathreg" adddriver "$(InstallDir)"
-xcopy /s /i /y "$(SolutionDir)\resources" "$(InstallDir)\resources"
-xcopy /s /i /y "$(InstallDir)\bin\x64" "$(InstallDir)\bin\Win64"
+xcopy /s /i /y "$(SolutionDir)\resources" "$(InstallDir)\hydra\resources"
+xcopy /s /i /y "$(InstallDir)\hydra\bin\x64" "$(InstallDir)\hydra\bin\Win64"
+move /y "$(InstallDir)\hydra\resources\driver.vrdrivermanifest" "$(InstallDir)\driver.vrdrivermanifest"
 </Command>
       <Message>Install Binary</Message>
     </PostBuildEvent>
@@ -240,30 +243,24 @@ xcopy /s /i /y "$(InstallDir)\bin\x64" "$(InstallDir)\bin\Win64"
       <Message />
     </CustomBuildStep>
     <PostBuildEvent>
-      <Command>mkdir "$(InstallDir)\bin\$(Platform)"
-copy $(OutDir)$(TargetName)$(TargetExt) "$(InstallDir)\bin\$(Platform)"
-copy "$(SixenseSDKDir)\bin\$(Platform)\VS2015\$(Configuration)_dll\*" "$(InstallDir)\bin\$(Platform)"
+      <Command>mkdir "$(InstallDir)\hydra\bin\$(Platform)"
+copy $(OutDir)$(TargetName)$(TargetExt) "$(InstallDir)\hydra\bin\$(Platform)"
+copy "$(SixenseSDKDir)\bin\$(Platform)\VS2015\$(Configuration)_dll\*" "$(InstallDir)\hydra\bin\$(Platform)"
 "$(SteamVRRuntimeDir)\bin\win32\vrpathreg" adddriver "$(InstallDir)"
-xcopy /s /i /y "$(SolutionDir)\resources" "$(InstallDir)\resources"
-xcopy /s /i /y "$(InstallDir)\bin\x64" "$(InstallDir)\bin\Win64"
+xcopy /s /i /y "$(SolutionDir)\resources" "$(InstallDir)\hydra\resources"
+xcopy /s /i /y "$(InstallDir)\hydra\bin\x64" "$(InstallDir)\hydra\bin\Win64"
+move /y "$(InstallDir)\hydra\resources\driver.vrdrivermanifest" "$(InstallDir)\driver.vrdrivermanifest"
 </Command>
       <Message>Install Binary</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="driverlog.h" />
     <ClInclude Include="driver_hydra.h" />
-    <ClInclude Include="pch.h" />
-    <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="driverlog.cpp" />
     <ClCompile Include="driver_hydra.cpp" />
-    <ClCompile Include="pch.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\README.md" />

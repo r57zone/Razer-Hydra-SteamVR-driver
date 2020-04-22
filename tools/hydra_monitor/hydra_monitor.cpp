@@ -210,7 +210,7 @@ protected:
 	/** Keep track of which devices are using driver_hydra */
 	void UpdateTrackedDevice( uint32_t unTrackedDeviceIndex )
 	{
-		char rgchTrackingSystemName[vr::k_unTrackingStringSize];
+		char rgchTrackingSystemName[32]; //was vr::k_unTrackingStringSize
 		vr::ETrackedPropertyError eError;
 
 		uint32_t size = vr::VRSystem()->GetStringTrackedDeviceProperty( unTrackedDeviceIndex, vr::Prop_TrackingSystemName_String, rgchTrackingSystemName, sizeof( rgchTrackingSystemName ), &eError );

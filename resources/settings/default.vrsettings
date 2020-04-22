@@ -2,7 +2,7 @@
     "hydra" : {
         "enableimu" : true,
         "enabledevelopermode" : false,
-        "rendermodel" : "vr_controller_vive_1_5",
+        "rendermodel" : "{hydra}vr_controller_vive_1_5",
         //"rendermodel" : "{hydra}hydra_controller",
         "joystickdeadzone" : 0.08
     }
