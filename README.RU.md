@@ -14,7 +14,7 @@ Vive контроллер | Razer Hydra
 
 В некоторых играх неудобно нажимать Joystick, но это можно отредактировать в SteamVR Bindings UI, если перейти в настройки SteamVR, нажать "Advance Settings" -> "Show" и перейти пункт контроллеры.
 
-### Действие
+### Действия
 Описание | Razer Hydra кнопка
 ------------ | -------------
 Присесть | Кнопка 3
@@ -35,5 +35,5 @@ Vive контроллер | Razer Hydra
 
 1. Загрузите исходники из [ветки "steamvr_input_new"](https://github.com/r57zone/steamvr_driver_hydra/tree/r/steamvr_input_new) и распакуйте.
 2. [Загрузите "openvr"](https://github.com/ValveSoftware/openvr) и распакуйте в "C:\openvr".
-3. [Загрузите "SixenseSDK_102215.zip"](https://github.com/r57zone/steamvr_driver_hydra/releases) и распакуйте в "C:\SixenseSDK_102215".
+3. [Загрузите "SixenseSDK_102215.zip"](https://github.com/r57zone/steamvr_driver_hydra/releases/tag/1) и распакуйте в "C:\SixenseSDK_102215".
 4. [Загрузите Microsoft Visual Studio Code 2017](https://code.visualstudio.com/download) и скомпилируйте.

@@ -4,7 +4,7 @@
 The driver emulates HTC Vive controllers.
 
 ## Buttons
-Vive controller | Razer hydra
+Vive controller | Razer Hydra
 ------------ | -------------
 System button | Middle button
 Application menu button | Button 4
@@ -14,13 +14,13 @@ Touchpad button | Joystick button
 
 In some games, it is inconvenient to click Joystick, but this can be edited in SteamVR Bindings UI, if you go to the SteamVR settings, click "Advance Settings" -> "Show" and go to the controllers item.
 
-### Action
-Description | Razer Hydra Button
+### Actions
+Description | Razer Hydra button
 ------------ | -------------
-Sit down | Button 3
+Crouch | Button 3
 
 
-For HMD can use any driver that supports button squats. For example can use the [TrueOpenVR and SteamVR bridge driver](https://github.com/TrueOpenVR) for HMD (FreeTrack for HMD from smartphones or ArduinoHMD for [full-fledged DIY HMD](https://github.com/TrueOpenVR/TrueOpenVR-DIY/blob/master/HMD/HMD.md)). While pressing button 3 on the Razer Hydra the keyboard button is pressed (the button is configurable). Sit down settings can be found in the configuration file "default.vrsettings".
+For HMD can use any driver that supports button crouch. Can use the [TrueOpenVR and SteamVR bridge driver](https://github.com/TrueOpenVR) for HMD (FreeTrack for HMD from smartphones or ArduinoHMD for [full-fledged DIY HMD](https://github.com/TrueOpenVR/TrueOpenVR-DIY/blob/master/HMD/HMD.md)). While pressing button 3 on the Razer Hydra the keyboard button is pressed (the button is configurable). Crouch settings can be found in the configuration file "default.vrsettings".
 
 ## Installation
 
@@ -35,5 +35,5 @@ For more detailed instructions please visit the [wiki](https://github.com/betavr
 
 1. Download sources from [branch "steamvr_input_new"](https://github.com/r57zone/steamvr_driver_hydra/tree/r/steamvr_input_new) and unpack.
 2. [Download "openvr"](https://github.com/ValveSoftware/openvr) and unpack to "C:\openvr".
-3. [Download "SixenseSDK_102215.zip"](https://github.com/r57zone/steamvr_driver_hydra/releases) and unpack to "C:\SixenseSDK_102215".
+3. [Download "SixenseSDK_102215.zip"](https://github.com/r57zone/steamvr_driver_hydra/releases/tag/1) and unpack to "C:\SixenseSDK_102215".
 4. [Download Microsoft Visual Studio Code 2017](https://code.visualstudio.com/download) and compile.
