@@ -1,9 +1,9 @@
 {
     "hydra" : {
-        "enableimu" : true,
-        "enabledevelopermode" : false,
-        "rendermodel" : "{hydra}vr_controller_vive_1_5",
-        //"rendermodel" : "{hydra}hydra_controller",
-        "joystickdeadzone" : 0.08
+        "EnableImu" : true,
+        "EnableDeveloperMode" : false,
+		"CrouchPressKey": 111,
+		"CrouchOffset": 0.7,
+        "JoyStickDeadZone" : 0.0
     }
 }

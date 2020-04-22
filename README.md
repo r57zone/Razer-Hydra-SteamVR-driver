@@ -24,7 +24,7 @@ For HMD can use any driver that supports button crouch. Can use the [TrueOpenVR 
 
 ## Installation
 
-1. [Download](https://github.com/r57zone/steamvr_driver_hydra/releases/) the latest driver.
+1. Download](https://github.com/r57zone/steamvr_driver_hydra/releases/) the latest driver.
 2. Unpack archive to "..\Steam\steamapps\common\SteamVR\drivers".
 3. [Add option](https://youtu.be/QCA3m4_3IJM?t=197) `"activateMultipleDrivers" : true,` to config "steamvr.vrsettings", to "steamvr" section.
 4. Change the dead zone if your stick goes to the side in config (..\Steam\steamapps\common\SteamVR\drivers\razer_hydra\hydra\resources\settings\default.vrsettings), option "joystickdeadzone".
@@ -33,7 +33,7 @@ For more detailed instructions please visit the [wiki](https://github.com/betavr
 
 ## Building
 
-1. Download sources from [branch "steamvr_input_new"](https://github.com/r57zone/steamvr_driver_hydra/tree/r/steamvr_input_new) and unpack.
+1. Download sources and unpack.
 2. [Download "openvr"](https://github.com/ValveSoftware/openvr) and unpack to "C:\openvr".
 3. [Download "SixenseSDK_102215.zip"](https://github.com/r57zone/steamvr_driver_hydra/releases/tag/1) and unpack to "C:\SixenseSDK_102215".
 4. [Download Microsoft Visual Studio Code 2017](https://code.visualstudio.com/download) and compile.
