@@ -31,7 +31,7 @@ For HMD can use any driver that supports button crouch. Can use the [TrueOpenVR 
 
 For more detailed instructions please visit the [wiki](https://github.com/betavr/steamvr_driver_hydra/wiki).
 
-## Problem solving
+## Problems solving
 **Driver don't work:**
 1. Uninstall the previous installed driver on Steam or folder.
 2. Download the [MotionCreator utility](https://github.com/r57zone/Razer-Hydra-SteamVR-driver/tree/1) (official utility by Sixence), switch "Controller Mode" to "Motion controller" mode.
