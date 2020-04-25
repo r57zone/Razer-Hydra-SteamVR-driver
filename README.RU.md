@@ -31,6 +31,17 @@ Vive контроллер | Razer Hydra
 
 Дополнительная информация есть в [вики](https://github.com/betavr/steamvr_driver_hydra/wiki).
 
+## Решение проблем
+**Драйвер не работает:**
+1. Удалите предыдущий установленный драйвер в Steam.
+2. Загрузите [утилиту MotionCreator](https://github.com/r57zone/Razer-Hydra-SteamVR-driver/tree/1) (официальная утилита для Razer Hydra), переключите "Controller Mode" в режим "Motion controller".
+3. Удалите MotionCreator.
+
+**Двигается курсор**
+
+Удалите MotionCreator или RazerHydra утилиту.
+
+
 ## Сборка
 
 1. Загрузите исходники и распакуйте.
