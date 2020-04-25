@@ -27,7 +27,7 @@ Vive контроллер | Razer Hydra
 1. [Загрузите](https://github.com/r57zone/Razer-Hydra-SteamVR-driver/releases/) последний драйвер.
 2. Распакуйте архив в "..\Steam\steamapps\common\SteamVR\drivers".
 3. [Добавьте параметр](https://youtu.be/QCA3m4_3IJM?t=197) `"activateMultipleDrivers" : true,` в конфиг "steamvr.vrsettings", в раздел "steamvr".
-4. Измените мертвую зону если ваш стик уходит в сторону, в конфиге (..\Steam\steamapps\common\SteamVR\drivers\razer_hydra\hydra\resources\settings\default.vrsettings), параметр "JoyStickDeadZone".
+4. Измените мёртвую зону если ваш стик уходит в сторону, в конфиге (..\Steam\steamapps\common\SteamVR\drivers\razer_hydra\hydra\resources\settings\default.vrsettings), параметр "JoyStickDeadZone". Чтобы определить значение мёртвой зоны, для проблемного стика, можно использовать [эту программу](https://github.com/r57zone/Sixence-Razer-Hydra-sample/releases).
 
 Дополнительная информация есть в [вики](https://github.com/betavr/steamvr_driver_hydra/wiki).
 
