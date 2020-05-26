@@ -34,7 +34,7 @@ Vive контроллер | Razer Hydra
 ## Решение проблем
 **Драйвер не работает:**
 1. Удалите предыдущий установленный драйвер в Steam или папку.
-2. Загрузите [утилиту MotionCreator](https://github.com/r57zone/Razer-Hydra-SteamVR-driver/tree/1) (официальная утилита от Sixence), переключите "Controller Mode" в режим "Motion controller".
+2. Загрузите [утилиту MotionCreator](https://github.com/r57zone/Razer-Hydra-SteamVR-driver/releases/tag/1) (официальная утилита от Sixence), переключите "Controller Mode" в режим "Motion controller".
 3. Удалите MotionCreator.
 
 Если не помогло попробуйте еще утилиту [RazerHydra](https://support.razer.com/console/razer-hydra) (официальная утилита от Razer).
